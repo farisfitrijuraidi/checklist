@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Task Tracker</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --accent: #2d3436;
+            --border: #dfe6e9;
+            --danger: #d63031; /* Red for urgency */
+            --danger-bg: #fff5f5; /* Light red background */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding-top: 60px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        }
+
+        header { margin-bottom: 30px; }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* Input Section */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: #fff;
+        }
+
+        input {
+            padding: 12px 15px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--accent); }
+
+        #taskInput { flex: 2; }
+        #taskDate { flex: 1; color: var(--text-muted); }
+
+        button#addBtn {
+            padding: 12px 20px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        button#addBtn:hover { opacity: 0.9; }
+
+        /* List Section */
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            margin-bottom: 10px; /* Added spacing for the border effect */
+            border: 1px solid var(--border); /* Changed to full border */
+            border-radius: 8px;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        /* URGENT STATE: Red border and background */
+        li.urgent {
+            border-color: var(--danger);
+            background-color: var(--danger-bg);
+            box-shadow: 0 4px 10px rgba(214, 48, 49, 0.1);
+        }
+
+        li.urgent .task-date {
+            color: var(--danger);
+            font-weight: 700;
+        }
+
+        /* Custom Checkbox */
+        .check-container {
+            position: relative;
+            cursor: pointer;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .check-container input {
+            opacity: 0;
+            position: absolute;
+            cursor: pointer;
+        }
+
+        .checkmark {
+            height: 20px;
+            width: 20px;
+            background-color: #fff;
+            border: 2px solid var(--text-muted);
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .check-container input:checked ~ .checkmark {
+            background-color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* Task Content */
+        .task-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .task-text { font-size: 1rem; }
+
+        .task-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Completed State overrides Urgent state */
+        li.completed {
+            opacity: 0.6;
+            background-color: #f9f9f9;
+            border-color: var(--border); /* Reset red border if completed */
+            box-shadow: none;
+        }
+
+        li.completed .task-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        /* Delete Button */
+        .delete-btn {
+            background: none;
+            border: none;
+            color: var(--border);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            margin-left: 10px;
+        }
+
+        .delete-btn:hover { color: var(--danger); }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 20px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>My Tasks</h1>
+        <p class="subtitle">Stay organised, stay focused.</p>
+    </header>
+
+    <div class="input-group">
+        <input type="text" id="taskInput" placeholder="Apa task nak buat?">
+        <input type="date" id="taskDate">
+        <button id="addBtn">Add</button>
+    </div>
+
+    <ul id="taskList">
+        </ul>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', loadTasks);
+    
+    const addBtn = document.getElementById('addBtn');
+    const taskInput = document.getElementById('taskInput');
+    const taskDate = document.getElementById('taskDate');
+    const taskList = document.getElementById('taskList');
+
+    addBtn.addEventListener('click', addTask);
+    taskInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') addTask();
+    });
+
+    function getTodayString() {
+        // Creates a YYYY-MM-DD string based on your LOCAL time
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function addTask() {
+        const text = taskInput.value.trim();
+        const date = taskDate.value;
+
+        if (text === '') {
+            alert("Please enter a task!");
+            return;
+        }
+
+        const task = {
+            id: Date.now(),
+            text: text,
+            date: date,
+            completed: false
+        };
+
+        saveTaskToStorage(task);
+        renderTasks();
+        
+        taskInput.value = '';
+        taskInput.focus();
+    }
+
+    function saveTaskToStorage(task) {
+        const tasks = getTasksFromStorage();
+        tasks.push(task);
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+    }
+
+    function getTasksFromStorage() {
+        return JSON.parse(localStorage.getItem('tasks')) || [];
+    }
+
+    function toggleComplete(id) {
+        const tasks = getTasksFromStorage();
+        const taskIndex = tasks.findIndex(t => t.id === id);
+        if (taskIndex > -1) {
+            tasks[taskIndex].completed = !tasks[taskIndex].completed;
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            renderTasks();
+        }
+    }
+
+    function deleteTask(id) {
+        let tasks = getTasksFromStorage();
+        tasks = tasks.filter(t => t.id !== id);
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        renderTasks();
+    }
+
+    function renderTasks() {
+        const tasks = getTasksFromStorage();
+        taskList.innerHTML = '';
+
+        if (tasks.length === 0) {
+            taskList.innerHTML = '<div class="empty-state">Takde task lagi. Tambah satu kat atas!</div>';
+            return;
+        }
+
+        // Sort: Not completed first, then Urgent items, then by date
+        const todayStr = getTodayString();
+
+        tasks.sort((a, b) => {
+            if (a.completed !== b.completed) return a.completed - b.completed;
+            return new Date(a.date) - new Date(b.date);
+        });
+
+        tasks.forEach(task => {
+            const li = document.createElement('li');
+            
+            // Check for urgency
+            const isOverdue = task.date && task.date <= todayStr;
+            const isUrgent = !task.completed && isOverdue;
+
+            if (task.completed) li.classList.add('completed');
+            else if (isUrgent) li.classList.add('urgent');
+
+            const dateDisplay = task.date ? new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+
+            li.innerHTML = `
+                <label class="check-container">
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleComplete(${task.id})">
+                    <span class="checkmark"></span>
+                </label>
+                <div class="task-content">
+                    <span class="task-text">${escapeHtml(task.text)}</span>
+                    ${dateDisplay ? `<span class="task-date">${dateDisplay} ${isUrgent ? '(Due)' : ''}</span>` : ''}
+                </div>
+                <button class="delete-btn" onclick="deleteTask(${task.id})">&times;</button>
+            `;
+            taskList.appendChild(li);
+        });
+    }
+
+    function loadTasks() {
+        renderTasks();
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+
+</body>
+</html>
