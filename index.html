@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checklist Job Tracker</title>
+    <title>Vibe Checklist Pro</title>
     <style>
-        /* --- SAME STYLES AS BEFORE --- */
         :root {
             --bg-color: #f8f9fa;
             --card-bg: #ffffff;
@@ -15,6 +14,7 @@
             --border: #dfe6e9;
             --danger: #d63031;
             --danger-bg: #fff5f5;
+            --subtask-bg: #fdfdfd;
         }
 
         body {
@@ -38,19 +38,34 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.04);
         }
 
-        header { margin-bottom: 30px; }
+        header { 
+            margin-bottom: 30px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
 
         h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
         
-        /* Status Indicator to show we are online */
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+
+        /* Status Dot */
         .status-dot {
             display: inline-block;
             width: 10px; height: 10px;
-            background-color: #00b894; /* Green for online */
+            background-color: #00b894;
             border-radius: 50%;
-            margin-left: 10px;
             animation: pulse 2s infinite;
         }
+
+        /* Uncheck All Button */
+        .reset-btn {
+            background: none; border: 1px solid var(--border);
+            border-radius: 6px; padding: 5px 10px;
+            font-size: 0.8rem; cursor: pointer; color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .reset-btn:hover { background: var(--bg-color); color: var(--accent); }
 
         @keyframes pulse {
             0% { box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.7); }
@@ -60,42 +75,37 @@
 
         p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
 
+        /* Input Group */
         .input-group { display: flex; gap: 10px; margin-bottom: 30px; background: #fff; }
-
         input {
-            padding: 12px 15px;
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            font-size: 0.95rem;
-            outline: none;
+            padding: 12px 15px; border: 2px solid var(--border);
+            border-radius: 8px; font-size: 0.95rem; outline: none;
         }
         input:focus { border-color: var(--accent); }
-
         #taskInput { flex: 2; }
         #taskDate { flex: 1; color: var(--text-muted); }
 
         button#addBtn {
-            padding: 12px 20px;
-            background: var(--accent);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
+            padding: 12px 20px; background: var(--accent); color: white;
+            border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
         }
         button#addBtn:hover { opacity: 0.9; }
 
+        /* Task List */
         ul { list-style: none; padding: 0; margin: 0; }
 
-        li {
-            display: flex; align-items: center; padding: 16px; margin-bottom: 10px;
-            border: 1px solid var(--border); border-radius: 8px; background: white;
+        li.task-item {
+            background: white; border: 1px solid var(--border);
+            border-radius: 8px; margin-bottom: 10px; padding: 0;
+            overflow: hidden; /* Contains children */
         }
 
-        li.urgent {
-            border-color: var(--danger);
-            background-color: var(--danger-bg);
+        /* The Main Task Row */
+        .task-main {
+            display: flex; align-items: center; padding: 16px;
         }
+
+        li.urgent { border-color: var(--danger); background-color: var(--danger-bg); }
         li.urgent .task-date { color: var(--danger); font-weight: 700; }
 
         .check-container {
@@ -114,65 +124,72 @@
         .task-text { font-size: 1rem; }
         .task-date { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
 
+        /* Completed Main Task */
         li.completed { opacity: 0.6; background-color: #f9f9f9; border-color: var(--border); }
         li.completed .task-text { text-decoration: line-through; color: var(--text-muted); }
 
-        .delete-btn {
+        /* Action Buttons (Delete & Subtask) */
+        .actions { display: flex; gap: 5px; }
+        .icon-btn {
             background: none; border: none; color: var(--border);
-            cursor: pointer; font-size: 1.2rem; padding: 5px; margin-left: 10px;
+            cursor: pointer; font-size: 1.1rem; padding: 5px;
+            transition: color 0.2s;
         }
-        .delete-btn:hover { color: var(--danger); }
-        .empty-state { text-align: center; color: var(--text-muted); padding: 20px; font-style: italic; }
-        /* --- MOBILE RESPONSIVENESS FIX --- */
-    /* This applies ONLY when screen is smaller than 600px */
-    @media (max-width: 600px) {
-        .input-group {
-            flex-direction: column; /* Stack items vertically */
-            gap: 10px;
-        }
+        .icon-btn:hover { color: var(--accent); }
+        .icon-btn.delete:hover { color: var(--danger); }
 
-        /* Force inputs and button to take full width */
-        #taskInput, #taskDate, button#addBtn {
-            width: 100%; 
-            flex: none; /* Stop trying to share space */
-            box-sizing: border-box; /* Ensure padding doesn't break width */
+        /* --- SUBTASKS STYLING --- */
+        .subtask-list {
+            background-color: var(--subtask-bg);
+            border-top: 1px solid var(--border);
+            padding: 0;
         }
-
-        .container {
-            padding: 20px; /* Less padding on mobile gives you more space */
-            width: 90%; /* Ensure card doesn't touch screen edges */
-            margin: 20px auto; /* Center it vertically a bit more */
+        .subtask-item {
+            display: flex; align-items: center;
+            padding: 10px 16px 10px 40px; /* Indented */
+            border-bottom: 1px solid #eee;
         }
+        .subtask-item:last-child { border-bottom: none; }
         
-        h1 {
-            font-size: 1.25rem; /* Slightly smaller title */
+        .subtask-text { font-size: 0.9rem; flex-grow: 1; margin-left: 10px; }
+        .subtask-item.completed .subtask-text { text-decoration: line-through; color: var(--text-muted); }
+        .subtask-item .checkmark { height: 16px; width: 16px; } /* Smaller checkbox */
+
+        .empty-state { text-align: center; color: var(--text-muted); padding: 20px; font-style: italic; }
+
+        /* Mobile Fix */
+        @media (max-width: 600px) {
+            .input-group { flex-direction: column; }
+            #taskInput, #taskDate, button#addBtn { width: 100%; }
+            .container { padding: 20px; width: 90%; margin: 20px auto; }
         }
-    }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>Live Sync <span class="status-dot" title="Connected to Cloud"></span></h1>
-        <p class="subtitle">Stay organised, stay focused.</p>
+        <div class="header-left">
+            <h1>Live Sync <span class="status-dot" title="Connected"></span></h1>
+            <p class="subtitle">Nested tasks & batch actions.</p>
+        </div>
+        <button id="uncheckAllBtn" class="reset-btn">Uncheck All</button>
     </header>
 
     <div class="input-group">
-        <input type="text" id="taskInput" placeholder="Add a task...">
+        <input type="text" id="taskInput" placeholder="Add a main task...">
         <input type="date" id="taskDate">
         <button id="addBtn">Add</button>
     </div>
 
     <ul id="taskList">
-        <div class="empty-state">Loading from cloud...</div>
+        <div class="empty-state">Loading...</div>
     </ul>
 </div>
 
 <script type="module">
-    // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, remove, update } 
+    import { getDatabase, ref, push, onValue, remove, update, get } 
     from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     // --- PASTE YOUR FIREBASE CONFIG HERE ---
@@ -187,56 +204,74 @@
     };
     // ---------------------------------------
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
-    const tasksRef = ref(database, 'tasks'); // 'tasks' is the name of our list
+    const tasksRef = ref(database, 'tasks');
 
     const addBtn = document.getElementById('addBtn');
     const taskInput = document.getElementById('taskInput');
     const taskDate = document.getElementById('taskDate');
     const taskList = document.getElementById('taskList');
+    const uncheckAllBtn = document.getElementById('uncheckAllBtn');
 
-    // 1. ADD DATA (PUSH to Cloud)
+    // 1. ADD MAIN TASK
     addBtn.addEventListener('click', () => {
         const text = taskInput.value.trim();
         const date = taskDate.value;
-
         if (text === "") return;
 
-        // Push a new object to the 'tasks' reference
         push(tasksRef, {
             text: text,
             date: date,
             completed: false,
-            createdAt: Date.now() // Good for sorting
+            createdAt: Date.now()
         });
-
         taskInput.value = "";
-        taskInput.focus();
     });
 
-    // 2. REAL-TIME LISTENER (This is the Vibe Magic)
-    // Instead of "loading" tasks once, we subscribe to changes.
-    // Whenever the database changes (by YOU or YOUR BROTHER), this runs.
+    // 2. UNCHECK ALL (The Feature You Asked For)
+    uncheckAllBtn.addEventListener('click', async () => {
+        // We get all tasks once to see which ones are completed
+        const snapshot = await get(tasksRef);
+        if (snapshot.exists()) {
+            const updates = {};
+            snapshot.forEach((childSnapshot) => {
+                const task = childSnapshot.val();
+                const key = childSnapshot.key;
+                
+                // Uncheck main task
+                if (task.completed) {
+                    updates[`tasks/${key}/completed`] = false;
+                }
+
+                // Uncheck subtasks if they exist
+                if (task.subtasks) {
+                    Object.keys(task.subtasks).forEach(subKey => {
+                        if (task.subtasks[subKey].completed) {
+                            updates[`tasks/${key}/subtasks/${subKey}/completed`] = false;
+                        }
+                    });
+                }
+            });
+            // Send all updates to Firebase at once
+            update(ref(database), updates);
+        }
+    });
+
+    // 3. REAL-TIME RENDERER
     onValue(tasksRef, (snapshot) => {
         taskList.innerHTML = "";
         const data = snapshot.val();
 
         if (!data) {
-            taskList.innerHTML = '<div class="empty-state">No tasks yet. Add one!</div>';
+            taskList.innerHTML = '<div class="empty-state">No tasks yet.</div>';
             return;
         }
 
-        // Convert object of objects into an array
-        const tasksArray = Object.entries(data).map(([id, task]) => ({
-            id, 
-            ...task
-        }));
-
-        // Sort (Completed last, then Urgent, then Date)
+        const tasksArray = Object.entries(data).map(([id, task]) => ({ id, ...task }));
         const todayStr = new Date().toISOString().split('T')[0];
         
+        // Sort logic
         tasksArray.sort((a, b) => {
             if (a.completed !== b.completed) return a.completed - b.completed;
             return new Date(a.date || '9999-12-31') - new Date(b.date || '9999-12-31');
@@ -247,45 +282,90 @@
         });
     });
 
-    // Helper to render HTML
     function renderTask(task, todayStr) {
         const li = document.createElement('li');
-        
-        // Urgency Logic
+        li.className = 'task-item';
+
         const isOverdue = task.date && task.date <= todayStr;
         const isUrgent = !task.completed && isOverdue;
-
         if (task.completed) li.classList.add('completed');
         else if (isUrgent) li.classList.add('urgent');
 
         const dateDisplay = task.date ? new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
 
+        // We build the Main Task + Subtask Container
         li.innerHTML = `
-            <label class="check-container">
-                <input type="checkbox" ${task.completed ? 'checked' : ''} class="checkbox-input">
-                <span class="checkmark"></span>
-            </label>
-            <div class="task-content">
-                <span class="task-text">${escapeHtml(task.text)}</span>
-                ${dateDisplay ? `<span class="task-date">${dateDisplay} ${isUrgent ? '(Due)' : ''}</span>` : ''}
+            <div class="task-main">
+                <label class="check-container">
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} class="main-checkbox">
+                    <span class="checkmark"></span>
+                </label>
+                <div class="task-content">
+                    <span class="task-text">${escapeHtml(task.text)}</span>
+                    ${dateDisplay ? `<span class="task-date">${dateDisplay} ${isUrgent ? '(Due)' : ''}</span>` : ''}
+                </div>
+                <div class="actions">
+                    <button class="icon-btn add-sub" title="Add Subtask">＋</button>
+                    <button class="icon-btn delete" title="Delete">×</button>
+                </div>
             </div>
-            <button class="delete-btn">&times;</button>
+            <ul class="subtask-list" id="sub-${task.id}">
+                </ul>
         `;
 
-        // 3. HANDLING CLICKS (Update & Delete)
-        // We attach listeners directly to the elements we just created
-        const checkbox = li.querySelector('.checkbox-input');
-        checkbox.addEventListener('change', () => {
-            // Update specific task in cloud
-            update(ref(database, `tasks/${task.id}`), {
-                completed: checkbox.checked
+        // Render Subtasks (if any)
+        const subList = li.querySelector(`#sub-${task.id}`);
+        if (task.subtasks) {
+            Object.entries(task.subtasks).forEach(([subId, subTask]) => {
+                const subLi = document.createElement('li');
+                subLi.className = `subtask-item ${subTask.completed ? 'completed' : ''}`;
+                subLi.innerHTML = `
+                    <label class="check-container">
+                        <input type="checkbox" ${subTask.completed ? 'checked' : ''} class="sub-checkbox">
+                        <span class="checkmark"></span>
+                    </label>
+                    <span class="subtask-text">${escapeHtml(subTask.text)}</span>
+                    <button class="icon-btn delete-sub">×</button>
+                `;
+                
+                // Subtask Events
+                const subCheck = subLi.querySelector('.sub-checkbox');
+                subCheck.addEventListener('change', () => {
+                    update(ref(database, `tasks/${task.id}/subtasks/${subId}`), { completed: subCheck.checked });
+                });
+
+                const subDel = subLi.querySelector('.delete-sub');
+                subDel.addEventListener('click', () => {
+                    remove(ref(database, `tasks/${task.id}/subtasks/${subId}`));
+                });
+
+                subList.appendChild(subLi);
             });
+        }
+
+        // Main Task Events
+        const mainCheck = li.querySelector('.main-checkbox');
+        mainCheck.addEventListener('change', () => {
+            update(ref(database, `tasks/${task.id}`), { completed: mainCheck.checked });
         });
 
-        const delBtn = li.querySelector('.delete-btn');
+        const delBtn = li.querySelector('.delete');
         delBtn.addEventListener('click', () => {
-            // Remove specific task from cloud
-            remove(ref(database, `tasks/${task.id}`));
+            if(confirm("Delete this task and all subtasks?")) {
+                remove(ref(database, `tasks/${task.id}`));
+            }
+        });
+
+        // ADD SUBTASK LOGIC
+        const addSubBtn = li.querySelector('.add-sub');
+        addSubBtn.addEventListener('click', () => {
+            const subText = prompt(`Add sub-task for: ${task.text}`);
+            if (subText) {
+                push(ref(database, `tasks/${task.id}/subtasks`), {
+                    text: subText,
+                    completed: false
+                });
+            }
         });
 
         taskList.appendChild(li);
@@ -296,11 +376,9 @@
         div.textContent = text;
         return div.innerHTML;
     }
-
-    // Enter key support
-    taskInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') addBtn.click();
-    });
+    
+    // Enter key helper
+    taskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addBtn.click(); });
 </script>
 
 </body>
