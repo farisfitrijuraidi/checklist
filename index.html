@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vibe Checklist Pro</title>
+    <title>Checklist Task Tracker</title>
     <style>
         :root {
             --bg-color: #f8f9fa;
@@ -47,9 +47,6 @@
 
         h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
         
-        .header-actions { display: flex; align-items: center; gap: 10px; }
-
-        /* Status Dot */
         .status-dot {
             display: inline-block;
             width: 10px; height: 10px;
@@ -58,7 +55,6 @@
             animation: pulse 2s infinite;
         }
 
-        /* Uncheck All Button */
         .reset-btn {
             background: none; border: 1px solid var(--border);
             border-radius: 6px; padding: 5px 10px;
@@ -75,7 +71,6 @@
 
         p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
 
-        /* Input Group */
         .input-group { display: flex; gap: 10px; margin-bottom: 30px; background: #fff; }
         input {
             padding: 12px 15px; border: 2px solid var(--border);
@@ -91,19 +86,15 @@
         }
         button#addBtn:hover { opacity: 0.9; }
 
-        /* Task List */
         ul { list-style: none; padding: 0; margin: 0; }
 
         li.task-item {
             background: white; border: 1px solid var(--border);
             border-radius: 8px; margin-bottom: 10px; padding: 0;
-            overflow: hidden; /* Contains children */
+            overflow: hidden;
         }
 
-        /* The Main Task Row */
-        .task-main {
-            display: flex; align-items: center; padding: 16px;
-        }
+        .task-main { display: flex; align-items: center; padding: 16px; }
 
         li.urgent { border-color: var(--danger); background-color: var(--danger-bg); }
         li.urgent .task-date { color: var(--danger); font-weight: 700; }
@@ -124,11 +115,9 @@
         .task-text { font-size: 1rem; }
         .task-date { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
 
-        /* Completed Main Task */
-        li.completed { opacity: 0.6; background-color: #f9f9f9; border-color: var(--border); }
+        li.completed .task-main { opacity: 0.6; background-color: #f9f9f9; }
         li.completed .task-text { text-decoration: line-through; color: var(--text-muted); }
 
-        /* Action Buttons (Delete & Subtask) */
         .actions { display: flex; gap: 5px; }
         .icon-btn {
             background: none; border: none; color: var(--border);
@@ -138,7 +127,6 @@
         .icon-btn:hover { color: var(--accent); }
         .icon-btn.delete:hover { color: var(--danger); }
 
-        /* --- SUBTASKS STYLING --- */
         .subtask-list {
             background-color: var(--subtask-bg);
             border-top: 1px solid var(--border);
@@ -146,18 +134,17 @@
         }
         .subtask-item {
             display: flex; align-items: center;
-            padding: 10px 16px 10px 40px; /* Indented */
+            padding: 10px 16px 10px 40px;
             border-bottom: 1px solid #eee;
         }
         .subtask-item:last-child { border-bottom: none; }
         
         .subtask-text { font-size: 0.9rem; flex-grow: 1; margin-left: 10px; }
         .subtask-item.completed .subtask-text { text-decoration: line-through; color: var(--text-muted); }
-        .subtask-item .checkmark { height: 16px; width: 16px; } /* Smaller checkbox */
+        .subtask-item .checkmark { height: 16px; width: 16px; }
 
         .empty-state { text-align: center; color: var(--text-muted); padding: 20px; font-style: italic; }
 
-        /* Mobile Fix */
         @media (max-width: 600px) {
             .input-group { flex-direction: column; }
             #taskInput, #taskDate, button#addBtn { width: 100%; }
@@ -171,7 +158,7 @@
     <header>
         <div class="header-left">
             <h1>Live Sync <span class="status-dot" title="Connected"></span></h1>
-            <p class="subtitle">Nested tasks & batch actions.</p>
+            <p class="subtitle">Stay organised, stay focused.</p>
         </div>
         <button id="uncheckAllBtn" class="reset-btn">Uncheck All</button>
     </header>
@@ -214,7 +201,6 @@
     const taskList = document.getElementById('taskList');
     const uncheckAllBtn = document.getElementById('uncheckAllBtn');
 
-    // 1. ADD MAIN TASK
     addBtn.addEventListener('click', () => {
         const text = taskInput.value.trim();
         const date = taskDate.value;
@@ -229,22 +215,14 @@
         taskInput.value = "";
     });
 
-    // 2. UNCHECK ALL (The Feature You Asked For)
     uncheckAllBtn.addEventListener('click', async () => {
-        // We get all tasks once to see which ones are completed
         const snapshot = await get(tasksRef);
         if (snapshot.exists()) {
             const updates = {};
             snapshot.forEach((childSnapshot) => {
                 const task = childSnapshot.val();
                 const key = childSnapshot.key;
-                
-                // Uncheck main task
-                if (task.completed) {
-                    updates[`tasks/${key}/completed`] = false;
-                }
-
-                // Uncheck subtasks if they exist
+                if (task.completed) updates[`tasks/${key}/completed`] = false;
                 if (task.subtasks) {
                     Object.keys(task.subtasks).forEach(subKey => {
                         if (task.subtasks[subKey].completed) {
@@ -253,12 +231,10 @@
                     });
                 }
             });
-            // Send all updates to Firebase at once
             update(ref(database), updates);
         }
     });
 
-    // 3. REAL-TIME RENDERER
     onValue(tasksRef, (snapshot) => {
         taskList.innerHTML = "";
         const data = snapshot.val();
@@ -271,7 +247,6 @@
         const tasksArray = Object.entries(data).map(([id, task]) => ({ id, ...task }));
         const todayStr = new Date().toISOString().split('T')[0];
         
-        // Sort logic
         tasksArray.sort((a, b) => {
             if (a.completed !== b.completed) return a.completed - b.completed;
             return new Date(a.date || '9999-12-31') - new Date(b.date || '9999-12-31');
@@ -293,7 +268,6 @@
 
         const dateDisplay = task.date ? new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
 
-        // We build the Main Task + Subtask Container
         li.innerHTML = `
             <div class="task-main">
                 <label class="check-container">
@@ -309,11 +283,9 @@
                     <button class="icon-btn delete" title="Delete">×</button>
                 </div>
             </div>
-            <ul class="subtask-list" id="sub-${task.id}">
-                </ul>
+            <ul class="subtask-list" id="sub-${task.id}"></ul>
         `;
 
-        // Render Subtasks (if any)
         const subList = li.querySelector(`#sub-${task.id}`);
         if (task.subtasks) {
             Object.entries(task.subtasks).forEach(([subId, subTask]) => {
@@ -328,10 +300,35 @@
                     <button class="icon-btn delete-sub">×</button>
                 `;
                 
-                // Subtask Events
+                // --- LOGIC CHANGE: CHILD UPDATES PARENT ---
                 const subCheck = subLi.querySelector('.sub-checkbox');
                 subCheck.addEventListener('change', () => {
-                    update(ref(database, `tasks/${task.id}/subtasks/${subId}`), { completed: subCheck.checked });
+                    const isNowChecked = subCheck.checked;
+                    const updates = {};
+                    
+                    // 1. Update this specific subtask
+                    updates[`tasks/${task.id}/subtasks/${subId}/completed`] = isNowChecked;
+
+                    // 2. Check SIBLINGS to see if Parent should change
+                    let allSiblingsChecked = true;
+                    
+                    // We iterate over the CURRENT state of siblings
+                    // Note: We must account for the one we just changed!
+                    Object.entries(task.subtasks).forEach(([k, v]) => {
+                        if (k === subId) {
+                            // This is the one we just clicked (use new value)
+                            if (!isNowChecked) allSiblingsChecked = false;
+                        } else {
+                            // This is a sibling (use existing value)
+                            if (!v.completed) allSiblingsChecked = false;
+                        }
+                    });
+
+                    // If ALL siblings are now checked, check the parent.
+                    // If ANY are unchecked, uncheck the parent.
+                    updates[`tasks/${task.id}/completed`] = allSiblingsChecked;
+
+                    update(ref(database), updates);
                 });
 
                 const subDel = subLi.querySelector('.delete-sub');
@@ -343,28 +340,47 @@
             });
         }
 
-        // Main Task Events
+        // --- LOGIC CHANGE: PARENT UPDATES CHILDREN ---
         const mainCheck = li.querySelector('.main-checkbox');
         mainCheck.addEventListener('change', () => {
-            update(ref(database, `tasks/${task.id}`), { completed: mainCheck.checked });
+            const isChecked = mainCheck.checked;
+            const updates = {};
+            
+            // 1. Update Parent
+            updates[`tasks/${task.id}/completed`] = isChecked;
+
+            // 2. Force ALL subtasks to match Parent
+            if (task.subtasks) {
+                Object.keys(task.subtasks).forEach(subId => {
+                    updates[`tasks/${task.id}/subtasks/${subId}/completed`] = isChecked;
+                });
+            }
+
+            update(ref(database), updates);
         });
 
         const delBtn = li.querySelector('.delete');
         delBtn.addEventListener('click', () => {
-            if(confirm("Delete this task and all subtasks?")) {
+            if(confirm("Delete this task?")) {
                 remove(ref(database, `tasks/${task.id}`));
             }
         });
 
-        // ADD SUBTASK LOGIC
         const addSubBtn = li.querySelector('.add-sub');
         addSubBtn.addEventListener('click', () => {
             const subText = prompt(`Add sub-task for: ${task.text}`);
             if (subText) {
-                push(ref(database, `tasks/${task.id}/subtasks`), {
+                const updates = {};
+                // Add the new subtask
+                const newSubRef = push(ref(database, `tasks/${task.id}/subtasks`));
+                updates[`tasks/${task.id}/subtasks/${newSubRef.key}`] = {
                     text: subText,
                     completed: false
-                });
+                };
+                // Adding a new unchecked subtask ALWAYS means parent must be unchecked
+                updates[`tasks/${task.id}/completed`] = false;
+                
+                update(ref(database), updates);
             }
         });
 
@@ -377,7 +393,6 @@
         return div.innerHTML;
     }
     
-    // Enter key helper
     taskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addBtn.click(); });
 </script>
 
