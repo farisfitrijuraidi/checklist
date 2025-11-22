@@ -123,6 +123,31 @@
         }
         .delete-btn:hover { color: var(--danger); }
         .empty-state { text-align: center; color: var(--text-muted); padding: 20px; font-style: italic; }
+        /* --- MOBILE RESPONSIVENESS FIX --- */
+    /* This applies ONLY when screen is smaller than 600px */
+    @media (max-width: 600px) {
+        .input-group {
+            flex-direction: column; /* Stack items vertically */
+            gap: 10px;
+        }
+
+        /* Force inputs and button to take full width */
+        #taskInput, #taskDate, button#addBtn {
+            width: 100%; 
+            flex: none; /* Stop trying to share space */
+            box-sizing: border-box; /* Ensure padding doesn't break width */
+        }
+
+        .container {
+            padding: 20px; /* Less padding on mobile gives you more space */
+            width: 90%; /* Ensure card doesn't touch screen edges */
+            margin: 20px auto; /* Center it vertically a bit more */
+        }
+        
+        h1 {
+            font-size: 1.25rem; /* Slightly smaller title */
+        }
+    }
     </style>
 </head>
 <body>
