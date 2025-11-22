@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checklist Task Tracker</title>
+    <title>Shared Vibe Checklist</title>
     <style>
+        /* --- SAME STYLES AS BEFORE --- */
         :root {
             --bg-color: #f8f9fa;
             --card-bg: #ffffff;
@@ -12,8 +13,8 @@
             --text-muted: #636e72;
             --accent: #2d3436;
             --border: #dfe6e9;
-            --danger: #d63031; /* Red for urgency */
-            --danger-bg: #fff5f5; /* Light red background */
+            --danger: #d63031;
+            --danger-bg: #fff5f5;
         }
 
         body {
@@ -39,36 +40,35 @@
 
         header { margin-bottom: 30px; }
 
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 0;
-            letter-spacing: -0.5px;
+        h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+        
+        /* Status Indicator to show we are online */
+        .status-dot {
+            display: inline-block;
+            width: 10px; height: 10px;
+            background-color: #00b894; /* Green for online */
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
         }
 
-        p.subtitle {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-top: 5px;
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 184, 148, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 184, 148, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 184, 148, 0); }
         }
 
-        /* Input Section */
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            background: #fff;
-        }
+        p.subtitle { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
+
+        .input-group { display: flex; gap: 10px; margin-bottom: 30px; background: #fff; }
 
         input {
             padding: 12px 15px;
             border: 2px solid var(--border);
             border-radius: 8px;
             font-size: 0.95rem;
-            transition: all 0.2s ease;
             outline: none;
         }
-
         input:focus { border-color: var(--accent); }
 
         #taskInput { flex: 2; }
@@ -82,255 +82,188 @@
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
-            transition: opacity 0.2s;
         }
-
         button#addBtn:hover { opacity: 0.9; }
 
-        /* List Section */
-        ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
+        ul { list-style: none; padding: 0; margin: 0; }
 
         li {
-            display: flex;
-            align-items: center;
-            padding: 16px;
-            margin-bottom: 10px; /* Added spacing for the border effect */
-            border: 1px solid var(--border); /* Changed to full border */
-            border-radius: 8px;
-            transition: all 0.2s;
-            background: white;
+            display: flex; align-items: center; padding: 16px; margin-bottom: 10px;
+            border: 1px solid var(--border); border-radius: 8px; background: white;
         }
 
-        /* URGENT STATE: Red border and background */
         li.urgent {
             border-color: var(--danger);
             background-color: var(--danger-bg);
-            box-shadow: 0 4px 10px rgba(214, 48, 49, 0.1);
         }
+        li.urgent .task-date { color: var(--danger); font-weight: 700; }
 
-        li.urgent .task-date {
-            color: var(--danger);
-            font-weight: 700;
-        }
-
-        /* Custom Checkbox */
         .check-container {
-            position: relative;
-            cursor: pointer;
-            margin-right: 15px;
-            display: flex;
-            align-items: center;
+            position: relative; cursor: pointer; margin-right: 15px; display: flex; align-items: center;
         }
-
-        .check-container input {
-            opacity: 0;
-            position: absolute;
-            cursor: pointer;
-        }
-
+        .check-container input { opacity: 0; position: absolute; cursor: pointer; }
         .checkmark {
-            height: 20px;
-            width: 20px;
-            background-color: #fff;
-            border: 2px solid var(--text-muted);
-            border-radius: 6px;
-            display: inline-block;
+            height: 20px; width: 20px; background-color: #fff;
+            border: 2px solid var(--text-muted); border-radius: 6px; display: inline-block;
         }
-
         .check-container input:checked ~ .checkmark {
-            background-color: var(--accent);
-            border-color: var(--accent);
+            background-color: var(--accent); border-color: var(--accent);
         }
 
-        /* Task Content */
-        .task-content {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-        }
-
+        .task-content { flex-grow: 1; display: flex; flex-direction: column; }
         .task-text { font-size: 1rem; }
+        .task-date { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
 
-        .task-date {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
+        li.completed { opacity: 0.6; background-color: #f9f9f9; border-color: var(--border); }
+        li.completed .task-text { text-decoration: line-through; color: var(--text-muted); }
 
-        /* Completed State overrides Urgent state */
-        li.completed {
-            opacity: 0.6;
-            background-color: #f9f9f9;
-            border-color: var(--border); /* Reset red border if completed */
-            box-shadow: none;
-        }
-
-        li.completed .task-text {
-            text-decoration: line-through;
-            color: var(--text-muted);
-        }
-
-        /* Delete Button */
         .delete-btn {
-            background: none;
-            border: none;
-            color: var(--border);
-            cursor: pointer;
-            font-size: 1.2rem;
-            padding: 5px;
-            margin-left: 10px;
+            background: none; border: none; color: var(--border);
+            cursor: pointer; font-size: 1.2rem; padding: 5px; margin-left: 10px;
         }
-
         .delete-btn:hover { color: var(--danger); }
-
-        .empty-state {
-            text-align: center;
-            color: var(--text-muted);
-            padding: 20px;
-            font-style: italic;
-        }
+        .empty-state { text-align: center; color: var(--text-muted); padding: 20px; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>My Tasks</h1>
-        <p class="subtitle">Stay organised, stay focused.</p>
+        <h1>Live Sync <span class="status-dot" title="Connected to Cloud"></span></h1>
+        <p class="subtitle">Updates instantly on all devices.</p>
     </header>
 
     <div class="input-group">
-        <input type="text" id="taskInput" placeholder="Apa task nak buat?">
+        <input type="text" id="taskInput" placeholder="Add a task...">
         <input type="date" id="taskDate">
         <button id="addBtn">Add</button>
     </div>
 
     <ul id="taskList">
-        </ul>
+        <div class="empty-state">Loading from cloud...</div>
+    </ul>
 </div>
 
-<script>
-    document.addEventListener('DOMContentLoaded', loadTasks);
-    
+<script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, push, onValue, remove, update } 
+    from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // --- PASTE YOUR FIREBASE CONFIG HERE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyBnShirXax3VIupSFrOy8Ge2PZQbUvIcH0",
+        authDomain: "checklist-saniy.firebaseapp.com",
+        databaseURL: "https://checklist-saniy-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "checklist-saniy",
+        storageBucket: "checklist-saniy.firebasestorage.app",
+        messagingSenderId: "198132106862",
+        appId: "1:198132106862:web:370d2b4a83c22430e5c87f"
+    };
+    // ---------------------------------------
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    const tasksRef = ref(database, 'tasks'); // 'tasks' is the name of our list
+
     const addBtn = document.getElementById('addBtn');
     const taskInput = document.getElementById('taskInput');
     const taskDate = document.getElementById('taskDate');
     const taskList = document.getElementById('taskList');
 
-    addBtn.addEventListener('click', addTask);
-    taskInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') addTask();
-    });
-
-    function getTodayString() {
-        // Creates a YYYY-MM-DD string based on your LOCAL time
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    function addTask() {
+    // 1. ADD DATA (PUSH to Cloud)
+    addBtn.addEventListener('click', () => {
         const text = taskInput.value.trim();
         const date = taskDate.value;
 
-        if (text === '') {
-            alert("Please enter a task!");
-            return;
-        }
+        if (text === "") return;
 
-        const task = {
-            id: Date.now(),
+        // Push a new object to the 'tasks' reference
+        push(tasksRef, {
             text: text,
             date: date,
-            completed: false
-        };
+            completed: false,
+            createdAt: Date.now() // Good for sorting
+        });
 
-        saveTaskToStorage(task);
-        renderTasks();
-        
-        taskInput.value = '';
+        taskInput.value = "";
         taskInput.focus();
-    }
+    });
 
-    function saveTaskToStorage(task) {
-        const tasks = getTasksFromStorage();
-        tasks.push(task);
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-    }
+    // 2. REAL-TIME LISTENER (This is the Vibe Magic)
+    // Instead of "loading" tasks once, we subscribe to changes.
+    // Whenever the database changes (by YOU or YOUR BROTHER), this runs.
+    onValue(tasksRef, (snapshot) => {
+        taskList.innerHTML = "";
+        const data = snapshot.val();
 
-    function getTasksFromStorage() {
-        return JSON.parse(localStorage.getItem('tasks')) || [];
-    }
-
-    function toggleComplete(id) {
-        const tasks = getTasksFromStorage();
-        const taskIndex = tasks.findIndex(t => t.id === id);
-        if (taskIndex > -1) {
-            tasks[taskIndex].completed = !tasks[taskIndex].completed;
-            localStorage.setItem('tasks', JSON.stringify(tasks));
-            renderTasks();
-        }
-    }
-
-    function deleteTask(id) {
-        let tasks = getTasksFromStorage();
-        tasks = tasks.filter(t => t.id !== id);
-        localStorage.setItem('tasks', JSON.stringify(tasks));
-        renderTasks();
-    }
-
-    function renderTasks() {
-        const tasks = getTasksFromStorage();
-        taskList.innerHTML = '';
-
-        if (tasks.length === 0) {
-            taskList.innerHTML = '<div class="empty-state">Takde task lagi. Tambah satu kat atas!</div>';
+        if (!data) {
+            taskList.innerHTML = '<div class="empty-state">No tasks yet. Add one!</div>';
             return;
         }
 
-        // Sort: Not completed first, then Urgent items, then by date
-        const todayStr = getTodayString();
+        // Convert object of objects into an array
+        const tasksArray = Object.entries(data).map(([id, task]) => ({
+            id, 
+            ...task
+        }));
 
-        tasks.sort((a, b) => {
+        // Sort (Completed last, then Urgent, then Date)
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        tasksArray.sort((a, b) => {
             if (a.completed !== b.completed) return a.completed - b.completed;
-            return new Date(a.date) - new Date(b.date);
+            return new Date(a.date || '9999-12-31') - new Date(b.date || '9999-12-31');
         });
 
-        tasks.forEach(task => {
-            const li = document.createElement('li');
-            
-            // Check for urgency
-            const isOverdue = task.date && task.date <= todayStr;
-            const isUrgent = !task.completed && isOverdue;
-
-            if (task.completed) li.classList.add('completed');
-            else if (isUrgent) li.classList.add('urgent');
-
-            const dateDisplay = task.date ? new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
-
-            li.innerHTML = `
-                <label class="check-container">
-                    <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleComplete(${task.id})">
-                    <span class="checkmark"></span>
-                </label>
-                <div class="task-content">
-                    <span class="task-text">${escapeHtml(task.text)}</span>
-                    ${dateDisplay ? `<span class="task-date">${dateDisplay} ${isUrgent ? '(Due)' : ''}</span>` : ''}
-                </div>
-                <button class="delete-btn" onclick="deleteTask(${task.id})">&times;</button>
-            `;
-            taskList.appendChild(li);
+        tasksArray.forEach(task => {
+            renderTask(task, todayStr);
         });
-    }
+    });
 
-    function loadTasks() {
-        renderTasks();
+    // Helper to render HTML
+    function renderTask(task, todayStr) {
+        const li = document.createElement('li');
+        
+        // Urgency Logic
+        const isOverdue = task.date && task.date <= todayStr;
+        const isUrgent = !task.completed && isOverdue;
+
+        if (task.completed) li.classList.add('completed');
+        else if (isUrgent) li.classList.add('urgent');
+
+        const dateDisplay = task.date ? new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+
+        li.innerHTML = `
+            <label class="check-container">
+                <input type="checkbox" ${task.completed ? 'checked' : ''} class="checkbox-input">
+                <span class="checkmark"></span>
+            </label>
+            <div class="task-content">
+                <span class="task-text">${escapeHtml(task.text)}</span>
+                ${dateDisplay ? `<span class="task-date">${dateDisplay} ${isUrgent ? '(Due)' : ''}</span>` : ''}
+            </div>
+            <button class="delete-btn">&times;</button>
+        `;
+
+        // 3. HANDLING CLICKS (Update & Delete)
+        // We attach listeners directly to the elements we just created
+        const checkbox = li.querySelector('.checkbox-input');
+        checkbox.addEventListener('change', () => {
+            // Update specific task in cloud
+            update(ref(database, `tasks/${task.id}`), {
+                completed: checkbox.checked
+            });
+        });
+
+        const delBtn = li.querySelector('.delete-btn');
+        delBtn.addEventListener('click', () => {
+            // Remove specific task from cloud
+            remove(ref(database, `tasks/${task.id}`));
+        });
+
+        taskList.appendChild(li);
     }
 
     function escapeHtml(text) {
@@ -338,6 +271,11 @@
         div.textContent = text;
         return div.innerHTML;
     }
+
+    // Enter key support
+    taskInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') addBtn.click();
+    });
 </script>
 
 </body>
