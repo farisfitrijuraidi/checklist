@@ -298,4 +298,145 @@
         const data = snapshot.val();
         if (!data) { taskList.innerHTML = '<div class="empty-state">No tasks found.</div>'; return; }
 
-        const tasksArray = Object.entries(data).map(([id, task]) =>
+        const tasksArray = Object.entries(data).map(([id, task]) => ({ id, ...task }));
+        const todayStr = new Date().toISOString().split('T')[0];
+        
+        tasksArray.sort((a, b) => {
+            const dateA = a.date ? new Date(a.date) : new Date('9999-12-31');
+            const dateB = b.date ? new Date(b.date) : new Date('9999-12-31');
+            return dateA - dateB;
+        });
+
+        tasksArray.forEach(task => renderTask(task, todayStr));
+    });
+
+    function renderTask(task, todayStr) {
+        const li = document.createElement('li');
+        li.className = 'task-item';
+
+        const isOverdue = task.date && task.date < todayStr;
+        const isUrgent = !task.completed && (isOverdue || task.date === todayStr);
+        if (task.completed) li.classList.add('completed');
+        if (isUrgent) li.style.borderColor = 'var(--danger)';
+
+        let dateDisplay = '-';
+        if (task.date) {
+            dateDisplay = new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        }
+
+        // MAIN TASK ROW
+        li.innerHTML = `
+            <div class="task-main grid-layout">
+                <div class="cell-date ${isUrgent ? 'urgent-text' : ''}">${dateDisplay}</div>
+                <div class="cell-checkbox">
+                    <label class="check-container">
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} class="main-checkbox">
+                        <span class="checkmark"></span>
+                    </label>
+                </div>
+                <div class="cell-task">${escapeHtml(task.text)}</div>
+                <div class="cell-remark">
+                    <input type="text" class="remark-input main-remark" placeholder="Add remark..." value="${escapeHtml(task.remark || '')}">
+                </div>
+                <div class="cell-actions actions">
+                    <button class="icon-btn add-sub" title="Add Subtask">＋</button>
+                    <button class="icon-btn delete" title="Delete">×</button>
+                </div>
+            </div>
+            <ul class="subtask-list" id="sub-${task.id}"></ul>
+        `;
+
+        // Main Task Events
+        const mainRemark = li.querySelector('.main-remark');
+        mainRemark.addEventListener('change', () => update(ref(database, `tasks/${task.id}`), { remark: mainRemark.value }));
+
+        const mainCheck = li.querySelector('.main-checkbox');
+        mainCheck.addEventListener('change', () => {
+            const isChecked = mainCheck.checked;
+            const updates = {};
+            updates[`tasks/${task.id}/completed`] = isChecked;
+            if (task.subtasks) {
+                Object.keys(task.subtasks).forEach(subId => updates[`tasks/${task.id}/subtasks/${subId}/completed`] = isChecked);
+            }
+            update(ref(database), updates);
+        });
+
+        li.querySelector('.delete').addEventListener('click', () => {
+            if(confirm("Delete task?")) remove(ref(database, `tasks/${task.id}`));
+        });
+
+        li.querySelector('.add-sub').addEventListener('click', () => {
+            const subText = prompt(`Add sub-task for: ${task.text}`);
+            if (subText) {
+                const updates = {};
+                const newSubRef = push(ref(database, `tasks/${task.id}/subtasks`));
+                updates[`tasks/${task.id}/subtasks/${newSubRef.key}`] = { text: subText, completed: false, remark: "" };
+                updates[`tasks/${task.id}/completed`] = false;
+                update(ref(database), updates);
+            }
+        });
+
+        // SUBTASK RENDERING
+        const subList = li.querySelector(`#sub-${task.id}`);
+        if (task.subtasks) {
+            Object.entries(task.subtasks).forEach(([subId, subTask]) => {
+                const subLi = document.createElement('li');
+                // Use 'grid-layout' here too so it aligns with main task!
+                subLi.className = `subtask-item grid-layout ${subTask.completed ? 'completed' : ''}`;
+                
+                subLi.innerHTML = `
+                    <div class="cell-date"></div> <div class="cell-checkbox">
+                        <label class="check-container" style="width: 18px; height: 18px;">
+                            <input type="checkbox" ${subTask.completed ? 'checked' : ''} class="sub-checkbox">
+                            <span class="checkmark" style="width: 18px; height: 18px;"></span>
+                        </label>
+                    </div>
+                    <div class="cell-task">${escapeHtml(subTask.text)}</div>
+                    <div class="cell-remark">
+                        <input type="text" class="remark-input sub-remark" placeholder="Sub-remark..." value="${escapeHtml(subTask.remark || '')}">
+                    </div>
+                    <div class="cell-actions actions">
+                        <button class="icon-btn delete-sub" style="font-size: 1rem;">×</button>
+                    </div>
+                `;
+                
+                // Subtask Remark Listener
+                const subRemark = subLi.querySelector('.sub-remark');
+                subRemark.addEventListener('change', () => {
+                    update(ref(database, `tasks/${task.id}/subtasks/${subId}`), { remark: subRemark.value });
+                });
+
+                const subCheck = subLi.querySelector('.sub-checkbox');
+                subCheck.addEventListener('change', () => {
+                    const isNowChecked = subCheck.checked;
+                    const updates = {};
+                    updates[`tasks/${task.id}/subtasks/${subId}/completed`] = isNowChecked;
+
+                    let allSiblingsChecked = true;
+                    Object.entries(task.subtasks).forEach(([k, v]) => {
+                        if (k === subId) { if (!isNowChecked) allSiblingsChecked = false; } 
+                        else { if (!v.completed) allSiblingsChecked = false; }
+                    });
+                    updates[`tasks/${task.id}/completed`] = allSiblingsChecked;
+                    update(ref(database), updates);
+                });
+
+                subLi.querySelector('.delete-sub').addEventListener('click', () => remove(ref(database, `tasks/${task.id}/subtasks/${subId}`)));
+                subList.appendChild(subLi);
+            });
+        }
+
+        taskList.appendChild(li);
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    taskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addBtn.click(); });
+</script>
+
+</body>
+</html>
