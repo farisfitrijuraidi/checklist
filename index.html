@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vibe Task Log</title>
+    <title>Checklist Job Tracker</title>
     <style>
         :root {
-            --bg-color: #f0f2f5; /* Slightly darker bg for contrast */
+            --bg-color: #f0f2f5;
             --card-bg: #ffffff;
             --text-main: #2d3436;
             --text-muted: #636e72;
@@ -26,25 +26,19 @@
             align-items: flex-start;
             min-height: 100vh;
             margin: 0;
-            padding: 40px 20px; /* Added padding for mobile */
+            padding: 40px 20px;
         }
 
         .container {
             width: 100%;
-            max-width: 800px; /* Wider container for table layout */
+            max-width: 900px; /* Slightly wider for nested remarks */
             background: var(--card-bg);
             padding: 40px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
 
-        header { 
-            margin-bottom: 30px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-
+        header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
         h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
         
         .status-dot {
@@ -82,11 +76,17 @@
         }
         button#addBtn:hover { opacity: 0.9; }
 
-        /* --- NEW TABLE LAYOUT --- */
-        .list-headers {
+        /* --- GRID SYSTEM --- */
+        /* Define column widths in one place to match header and rows */
+        .grid-layout {
             display: grid;
-            grid-template-columns: 90px 40px 2fr 1fr 70px; /* Define column widths */
-            gap: 15px; padding: 0 16px 10px;
+            grid-template-columns: 90px 40px 2fr 1.5fr 70px; /* Date | Check | Task | Remark | Action */
+            gap: 15px;
+            align-items: center;
+        }
+
+        .list-headers {
+            padding: 0 16px 10px;
             font-size: 0.85rem; font-weight: 600; color: var(--text-muted);
             border-bottom: 2px solid var(--border); margin-bottom: 10px;
         }
@@ -99,23 +99,15 @@
             border-radius: 8px; margin-bottom: 8px; padding: 0;
             overflow: hidden; transition: all 0.2s ease;
         }
-        li.task-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.03); border-color: #cfd8dc; }
-
-        /* The grid row for a task */
-        .task-grid-row {
-            display: grid;
-            grid-template-columns: 90px 40px 2fr 1fr 70px; /* Match headers */
-            align-items: center;
-            gap: 15px; padding: 12px 16px;
-        }
+        
+        .task-main { padding: 12px 16px; }
 
         /* Cell Styles */
         .cell-date { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
         .urgent-text { color: var(--danger); font-weight: 700; }
         .cell-checkbox { display: flex; justify-content: center; }
-        .cell-task { font-size: 1rem; word-break: break-word; }
-
-        /* Remark Input Style */
+        .cell-task { font-size: 1rem; word-break: break-word; font-weight: 500; }
+        
         .remark-input {
             width: 100%; padding: 8px; border: 1px solid transparent;
             border-radius: 6px; font-size: 0.9rem; background: transparent; color: var(--text-muted);
@@ -123,38 +115,25 @@
         .remark-input:focus, .remark-input:hover {
             border-color: var(--border); background: white; color: var(--text-main);
         }
-        ::placeholder { color: #bdc3c7; }
 
-        /* Completed State */
-        li.completed .task-main { background-color: #f9f9f9; }
-        li.completed .cell-task, li.completed .cell-date, li.completed .remark-input {
-            text-decoration: line-through; opacity: 0.6; color: var(--text-muted);
-        }
-
-        /* Checkbox styling */
-        .check-container {
-            position: relative; cursor: pointer; width: 20px; height: 20px;
-        }
+        /* Checkbox Styling */
+        .check-container { position: relative; cursor: pointer; width: 20px; height: 20px; }
         .check-container input { opacity: 0; position: absolute; }
         .checkmark {
             position: absolute; top: 0; left: 0; height: 20px; width: 20px;
             background-color: #fff; border: 2px solid var(--border); border-radius: 6px;
             transition: all 0.2s;
         }
-        .check-container input:checked ~ .checkmark {
-            background-color: var(--accent); border-color: var(--accent);
-        }
+        .check-container input:checked ~ .checkmark { background-color: var(--accent); border-color: var(--accent); }
         .checkmark:after {
-            content: ""; position: absolute; display: none;
-            left: 6px; top: 2px; width: 5px; height: 10px;
-            border: solid white; border-width: 0 2px 2px 0;
-            transform: rotate(45deg);
+            content: ""; position: absolute; display: none; left: 6px; top: 2px;
+            width: 5px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg);
         }
         .check-container input:checked ~ .checkmark:after { display: block; }
 
         /* Actions */
         .actions { display: flex; justify-content: flex-end; gap: 5px; opacity: 0.5; transition: opacity 0.2s; }
-        li.task-item:hover .actions { opacity: 1; }
+        li.task-item:hover .actions, .subtask-item:hover .actions { opacity: 1; }
         .icon-btn {
             background: none; border: none; color: var(--text-muted);
             cursor: pointer; font-size: 1.2rem; padding: 4px 8px;
@@ -163,29 +142,36 @@
         .icon-btn:hover { background-color: var(--bg-color); color: var(--accent); }
         .icon-btn.delete:hover { color: var(--danger); background-color: var(--danger-bg); }
 
-        /* Subtasks */
+        /* --- SUBTASKS --- */
         .subtask-list { background-color: var(--subtask-bg); border-top: 1px solid var(--border); }
+        
         .subtask-item {
-            display: flex; align-items: center; padding: 10px 16px 10px 145px; /* Indent to align with task text */
+            /* Uses the same grid layout class! */
+            padding: 10px 16px;
             border-bottom: 1px solid #eee;
         }
         .subtask-item:last-child { border-bottom: none; }
-        .subtask-text { font-size: 0.9rem; flex-grow: 1; margin-left: 12px; }
-        .subtask-item.completed .subtask-text { text-decoration: line-through; color: var(--text-muted); opacity: 0.7; }
+        
+        /* Indent the task text for subtasks to show hierarchy visually */
+        .subtask-item .cell-task { padding-left: 20px; font-size: 0.95rem; color: #4a5568; }
+        .subtask-item .cell-date { opacity: 0; } /* Hide date for subtasks to keep alignment */
+
+        /* Completed States */
+        .completed .cell-task, .completed .cell-date, .completed .remark-input {
+            text-decoration: line-through; opacity: 0.6; color: var(--text-muted);
+        }
 
         .empty-state { text-align: center; color: var(--text-muted); padding: 30px; font-style: italic; }
 
-        /* Mobile Layout */
+        /* --- MOBILE OPTIMIZATION --- */
         @media (max-width: 768px) {
             .container { padding: 20px; }
             .input-group { flex-direction: column; }
             #taskInput, #taskDate, button#addBtn { width: 100%; flex: none; }
-            
-            /* Hide table headers on mobile */
             .list-headers { display: none; }
 
-            /* Change grid to a more stacked layout for mobile cards */
-            .task-grid-row {
+            /* Collapse Grid */
+            .grid-layout {
                 grid-template-columns: auto 1fr auto;
                 grid-template-areas: 
                     "check task actions"
@@ -193,14 +179,24 @@
                     ". remark remark";
                 gap: 8px; padding: 12px;
             }
-            .cell-checkbox { grid-area: check; align-self: start; padding-top: 2px; }
-            .cell-task { grid-area: task; font-weight: 500; }
-            .cell-actions { grid-area: actions; align-self: start; }
-            .cell-date { grid-area: date; font-size: 0.8rem; }
-            .cell-remark { grid-area: remark; margin-top: 5px; }
-            .remark-input { background: var(--bg-color); padding: 10px; } /* Make input more obvious on mobile */
 
-            .subtask-item { padding-left: 50px; } /* Less indentation on mobile */
+            .cell-checkbox { grid-area: check; align-self: start; padding-top: 2px; }
+            .cell-task { grid-area: task; }
+            .cell-actions { grid-area: actions; align-self: start; }
+            .cell-date { grid-area: date; font-size: 0.8rem; margin-bottom: 4px; }
+            .cell-remark { grid-area: remark; }
+
+            /* Make remarks look like inputs on mobile */
+            .remark-input { background: rgba(0,0,0,0.03); padding: 8px; border-radius: 6px; }
+
+            /* Subtask indentation on mobile */
+            .subtask-item .cell-task { padding-left: 0; } /* Remove padding, use border instead */
+            .subtask-item { 
+                border-left: 4px solid var(--border); /* Visual indicator of nesting */
+                background-color: #fff;
+                margin: 0 0 0 10px; /* Slight indent */
+            }
+            .subtask-item .cell-date { display: none; } /* Strictly hide date on mobile subtasks */
         }
     </style>
 </head>
@@ -210,9 +206,9 @@
     <header>
         <div class="header-left">
             <h1>Task Log <span class="status-dot" title="Connected"></span></h1>
-            <p class="subtitle">Date-ordered layout with remarks.</p>
+            <p class="subtitle">Stay organised, stay focused.</p>
         </div>
-        <button id="uncheckAllBtn" class="reset-btn">Reset All Tasks</button>
+        <button id="uncheckAllBtn" class="reset-btn">Reset All</button>
     </header>
 
     <div class="input-group">
@@ -221,7 +217,7 @@
         <button id="addBtn">Add Task</button>
     </div>
 
-    <div class="list-headers">
+    <div class="list-headers grid-layout">
         <div class="header-item">DATE</div>
         <div class="header-item" style="text-align: center;">DONE</div>
         <div class="header-item">TASK</div>
@@ -230,7 +226,7 @@
     </div>
 
     <ul id="taskList">
-        <div class="empty-state">Connecting to cloud...</div>
+        <div class="empty-state">Connecting...</div>
     </ul>
 </div>
 
@@ -241,13 +237,7 @@
 
     // --- PASTE YOUR FIREBASE CONFIG HERE ---
     const firebaseConfig = {
-        apiKey: "AIzaSyBnShirXax3VIupSFrOy8Ge2PZQbUvIcH0",
-        authDomain: "checklist-saniy.firebaseapp.com",
-        databaseURL: "https://checklist-saniy-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "checklist-saniy",
-        storageBucket: "checklist-saniy.firebasestorage.app",
-        messagingSenderId: "198132106862",
-        appId: "1:198132106862:web:370d2b4a83c22430e5c87f"
+        // ... paste your keys here ...
     };
     // ---------------------------------------
 
@@ -261,7 +251,6 @@
     const taskList = document.getElementById('taskList');
     const uncheckAllBtn = document.getElementById('uncheckAllBtn');
 
-    // --- Add Task ---
     addBtn.addEventListener('click', () => {
         const text = taskInput.value.trim();
         const date = taskDate.value;
@@ -271,15 +260,14 @@
             text: text,
             date: date,
             completed: false,
-            remark: "", // Initialize remark as empty
+            remark: "",
             createdAt: Date.now()
         });
         taskInput.value = "";
     });
 
-    // --- Uncheck All ---
     uncheckAllBtn.addEventListener('click', async () => {
-        if (!confirm("Are you sure you want to uncheck all tasks?")) return;
+        if (!confirm("Reset all tasks?")) return;
         const snapshot = await get(tasksRef);
         if (snapshot.exists()) {
             const updates = {};
@@ -299,163 +287,9 @@
         }
     });
 
-    // --- Real-time Listener ---
     onValue(tasksRef, (snapshot) => {
         taskList.innerHTML = "";
         const data = snapshot.val();
+        if (!data) { taskList.innerHTML = '<div class="empty-state">No tasks found.</div>'; return; }
 
-        if (!data) {
-            taskList.innerHTML = '<div class="empty-state">No tasks found.</div>';
-            return;
-        }
-
-        const tasksArray = Object.entries(data).map(([id, task]) => ({ id, ...task }));
-        const todayStr = new Date().toISOString().split('T')[0];
-        
-        // --- FEATURE 1: SORTING LOGIC CHANGED ---
-        // Only sort by date. Removed the 'completed' sort.
-        tasksArray.sort((a, b) => {
-            // Use a far-future date for tasks without dates so they go to the bottom
-            const dateA = a.date ? new Date(a.date) : new Date('9999-12-31');
-            const dateB = b.date ? new Date(b.date) : new Date('9999-12-31');
-            return dateA - dateB;
-        });
-
-        tasksArray.forEach(task => {
-            renderTask(task, todayStr);
-        });
-    });
-
-    function renderTask(task, todayStr) {
-        const li = document.createElement('li');
-        li.className = 'task-item';
-
-        const isOverdue = task.date && task.date < todayStr;
-        const isDueToday = task.date === todayStr;
-        const isUrgent = !task.completed && (isOverdue || isDueToday);
-        
-        if (task.completed) li.classList.add('completed');
-        if (isUrgent) li.style.borderColor = 'var(--danger)'; // Subtle highlight for parent container
-
-        // Format Date: "25 Nov" or "-" if none
-        let dateDisplay = '-';
-        if (task.date) {
-            const dateObj = new Date(task.date);
-            dateDisplay = dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-        }
-
-        // --- FEATURE 2: NEW GRID LAYOUT & REMARK FIELD ---
-        li.innerHTML = `
-            <div class="task-main task-grid-row">
-                <div class="cell-date ${isUrgent ? 'urgent-text' : ''}" title="${task.date || 'No date'}">
-                    ${dateDisplay}
-                </div>
-                <div class="cell-checkbox">
-                    <label class="check-container">
-                        <input type="checkbox" ${task.completed ? 'checked' : ''} class="main-checkbox">
-                        <span class="checkmark"></span>
-                    </label>
-                </div>
-                <div class="cell-task">
-                    <span class="task-text">${escapeHtml(task.text)}</span>
-                </div>
-                <div class="cell-remark">
-                    <input type="text" class="remark-input" placeholder="Add remark..." value="${escapeHtml(task.remark || '')}">
-                </div>
-                <div class="cell-actions actions">
-                    <button class="icon-btn add-sub" title="Add Subtask">＋</button>
-                    <button class="icon-btn delete" title="Delete">×</button>
-                </div>
-            </div>
-            <ul class="subtask-list" id="sub-${task.id}"></ul>
-        `;
-
-        // --- Event Listener for Remark Input ---
-        const remarkInput = li.querySelector('.remark-input');
-        remarkInput.addEventListener('change', () => {
-            // Save remark to Firebase when user presses Enter or clicks away
-            update(ref(database, `tasks/${task.id}`), { remark: remarkInput.value });
-        });
-
-        // --- Subtask Rendering & Logic (Same as before) ---
-        const subList = li.querySelector(`#sub-${task.id}`);
-        if (task.subtasks) {
-            Object.entries(task.subtasks).forEach(([subId, subTask]) => {
-                const subLi = document.createElement('li');
-                subLi.className = `subtask-item ${subTask.completed ? 'completed' : ''}`;
-                subLi.innerHTML = `
-                    <label class="check-container" style="margin-right: 12px;">
-                        <input type="checkbox" ${subTask.completed ? 'checked' : ''} class="sub-checkbox">
-                        <span class="checkmark" style="width: 18px; height: 18px;"></span>
-                    </label>
-                    <span class="subtask-text">${escapeHtml(subTask.text)}</span>
-                    <button class="icon-btn delete-sub" style="font-size: 1rem; opacity: 0.5;">×</button>
-                `;
-                
-                const subCheck = subLi.querySelector('.sub-checkbox');
-                subCheck.addEventListener('change', () => {
-                    const isNowChecked = subCheck.checked;
-                    const updates = {};
-                    updates[`tasks/${task.id}/subtasks/${subId}/completed`] = isNowChecked;
-
-                    let allSiblingsChecked = true;
-                    Object.entries(task.subtasks).forEach(([k, v]) => {
-                        if (k === subId) { if (!isNowChecked) allSiblingsChecked = false; } 
-                        else { if (!v.completed) allSiblingsChecked = false; }
-                    });
-                    updates[`tasks/${task.id}/completed`] = allSiblingsChecked;
-                    update(ref(database), updates);
-                });
-
-                const subDel = subLi.querySelector('.delete-sub');
-                subDel.addEventListener('click', () => remove(ref(database, `tasks/${task.id}/subtasks/${subId}`)));
-                subList.appendChild(subLi);
-            });
-        }
-
-        // --- Main Task Events ---
-        const mainCheck = li.querySelector('.main-checkbox');
-        mainCheck.addEventListener('change', () => {
-            const isChecked = mainCheck.checked;
-            const updates = {};
-            updates[`tasks/${task.id}/completed`] = isChecked;
-            if (task.subtasks) {
-                Object.keys(task.subtasks).forEach(subId => {
-                    updates[`tasks/${task.id}/subtasks/${subId}/completed`] = isChecked;
-                });
-            }
-            update(ref(database), updates);
-        });
-
-        const delBtn = li.querySelector('.delete');
-        delBtn.addEventListener('click', () => {
-            if(confirm("Delete this task?")) remove(ref(database, `tasks/${task.id}`));
-        });
-
-        const addSubBtn = li.querySelector('.add-sub');
-        addSubBtn.addEventListener('click', () => {
-            const subText = prompt(`Add sub-task for: ${task.text}`);
-            if (subText) {
-                const updates = {};
-                const newSubRef = push(ref(database, `tasks/${task.id}/subtasks`));
-                updates[`tasks/${task.id}/subtasks/${newSubRef.key}`] = { text: subText, completed: false };
-                updates[`tasks/${task.id}/completed`] = false;
-                update(ref(database), updates);
-            }
-        });
-
-        taskList.appendChild(li);
-    }
-
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    taskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addBtn.click(); });
-    taskDate.addEventListener('keypress', (e) => { if (e.key === 'Enter') addBtn.click(); });
-</script>
-
-</body>
-</html>
+        const tasksArray = Object.entries(data).map(([id, task]) =>
