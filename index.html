@@ -261,6 +261,12 @@
     const taskList = document.getElementById('taskList');
     const uncheckAllBtn = document.getElementById('uncheckAllBtn');
 
+    // Helper to Resize Textarea
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
     addBtn.addEventListener('click', () => {
         const text = taskInput.value.trim();
         const date = taskDate.value;
@@ -326,7 +332,6 @@
             dateDisplay = new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
         }
 
-        // --- CHANGE: Uses <textarea> instead of <input> for remarks ---
         li.innerHTML = `
             <div class="task-main">
                 <div class="cell-checkbox">
@@ -356,13 +361,13 @@
             <div class="inline-add-container" id="add-container-${task.id}"></div>
         `;
 
+        // Remark Logic
         const mainRemark = li.querySelector('.main-remark');
+        // FIX: Resize immediately on load
+        setTimeout(() => autoResize(mainRemark), 0); 
+        
         mainRemark.addEventListener('change', () => update(ref(database, `tasks/${task.id}`), { remark: mainRemark.value }));
-        // Auto-expand textarea
-        mainRemark.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
+        mainRemark.addEventListener('input', function() { autoResize(this); });
 
         const mainCheck = li.querySelector('.main-checkbox');
         mainCheck.addEventListener('change', () => {
@@ -414,7 +419,6 @@
                 subLi.className = `subtask-item draggable-sub`; 
                 if(subTask.completed) subLi.classList.add('completed');
                 
-                // --- CHANGE: Uses <textarea> for sub-remarks too ---
                 subLi.innerHTML = `
                     <div class="cell-checkbox">
                         <label class="check-container" style="width: 18px; height: 18px;">
@@ -434,11 +438,11 @@
                 `;
 
                 const subRemark = subLi.querySelector('.sub-remark');
+                // FIX: Resize immediately on load for subtasks too
+                setTimeout(() => autoResize(subRemark), 0);
+
                 subRemark.addEventListener('change', () => update(ref(database, `tasks/${task.id}/subtasks/${subId}`), { remark: subRemark.value }));
-                subRemark.addEventListener('input', function() {
-                    this.style.height = 'auto';
-                    this.style.height = (this.scrollHeight) + 'px';
-                });
+                subRemark.addEventListener('input', function() { autoResize(this); });
 
                 const subCheck = subLi.querySelector('.sub-checkbox');
                 subCheck.addEventListener('change', () => {
