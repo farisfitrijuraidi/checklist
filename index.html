@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checlist Job Tracker</title>
+    <title>Vibe Task Log Pro</title>
     <style>
         :root {
             --bg-color: #f0f2f5;
@@ -37,7 +37,6 @@
             padding: 40px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            /* overflow: hidden; Removed to allow sticky headers if needed, but helps with child overflow */
         }
 
         header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
@@ -57,22 +56,18 @@
         }
         .reset-btn:hover { background: var(--bg-color); color: var(--accent); border-color: var(--accent); }
 
-        /* --- INPUT GROUP FIX (Mobile Overflow) --- */
         .input-group { 
-            display: flex; 
-            gap: 10px; 
-            margin-bottom: 30px; 
-            flex-wrap: wrap; /* Allows wrapping on small screens */
+            display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; 
         }
         
         input {
             padding: 12px 15px; border: 2px solid var(--border);
             border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s;
-            box-sizing: border-box; /* Crucial for preventing padding overflow */
+            box-sizing: border-box;
         }
         input:focus { border-color: var(--accent); }
         
-        #taskInput { flex: 1 1 200px; min-width: 0; } /* Flex grow, shrink, base width */
+        #taskInput { flex: 1 1 200px; min-width: 0; }
         #taskDate { flex: 0 0 auto; color: var(--text-muted); }
 
         button#addBtn {
@@ -82,7 +77,6 @@
         }
         button#addBtn:hover { opacity: 0.9; }
 
-        /* --- DRAG & DROP STYLES --- */
         .draggable { cursor: grab; }
         .draggable:active { cursor: grabbing; }
         .dragging { opacity: 0.5; background: var(--drag-bg); border: 2px dashed var(--text-muted); }
@@ -95,11 +89,9 @@
             overflow: hidden; transition: box-shadow 0.2s ease, transform 0.1s;
         }
         
-        /* --- NEW LAYOUT: Stacked --- */
         .task-main { 
             padding: 16px; 
             display: grid;
-            /* Grid Template: Checkbox | Content (Task + Remark) | Date & Actions */
             grid-template-columns: 30px 1fr auto; 
             gap: 15px;
             align-items: start;
@@ -110,21 +102,20 @@
         .task-content-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 8px; /* Space between Task Name and Remark */
-            min-width: 0; /* Allows text wrap inside grid */
+            gap: 8px;
+            min-width: 0;
         }
 
         .cell-task { 
             font-size: 1.05rem; 
             font-weight: 500; 
-            word-wrap: break-word; /* Wrap long text */
+            word-wrap: break-word;
             line-height: 1.4;
         }
 
-        .remark-container {
-            width: 100%;
-        }
+        .remark-container { width: 100%; }
 
+        /* --- THE FIX: TEXTAREA STYLING --- */
         .remark-input {
             width: 100%; 
             padding: 8px 10px; 
@@ -134,9 +125,13 @@
             background: #fafafa; 
             color: var(--text-muted);
             box-sizing: border-box;
+            font-family: inherit; /* Ensure font matches */
+            resize: vertical;     /* Allow user to drag height */
+            min-height: 38px;     /* Minimum height */
+            overflow: hidden;     /* Hide scrollbar if auto-expanding */
         }
         .remark-input:focus {
-            border-color: var(--accent); background: white; color: var(--text-main);
+            border-color: var(--accent); background: white; color: var(--text-main); outline: none;
         }
 
         .meta-actions {
@@ -159,28 +154,24 @@
         .icon-btn.delete:hover { color: var(--danger); background-color: var(--danger-bg); border-color: var(--danger); }
         .drag-handle { cursor: grab; color: #b2bec3; }
 
-        /* --- SUBTASKS --- */
         .subtask-list { background-color: var(--subtask-bg); border-top: 1px solid var(--border); }
         
         .subtask-item {
-            padding: 12px 16px 12px 45px; /* Indent */
+            padding: 12px 16px 12px 45px;
             border-bottom: 1px solid #eee;
             display: grid;
-            grid-template-columns: 24px 1fr auto; /* Check | Content | Actions */
+            grid-template-columns: 24px 1fr auto;
             gap: 12px;
             align-items: start;
         }
         .subtask-item:last-child { border-bottom: none; }
-
         .subtask-item .cell-task { font-size: 0.95rem; color: #4a5568; }
 
-        /* --- INLINE ADD SUBTASK FORM --- */
         .inline-add-form {
             padding: 10px 16px 10px 45px;
             border-top: 1px solid var(--border);
             background: #fff;
-            display: flex;
-            gap: 8px;
+            display: flex; gap: 8px;
         }
         .inline-add-input {
             flex: 1; padding: 8px; border: 1px solid var(--border);
@@ -191,7 +182,6 @@
             border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;
         }
 
-        /* Checkbox Styling */
         .check-container { position: relative; cursor: pointer; width: 20px; height: 20px; display: block; }
         .check-container input { opacity: 0; position: absolute; }
         .checkmark {
@@ -206,24 +196,19 @@
         }
         .check-container input:checked ~ .checkmark:after { display: block; }
 
-        /* Completed State */
         .completed .cell-task, .completed .cell-date, .completed .remark-input {
             text-decoration: line-through; opacity: 0.6;
         }
 
-        /* Mobile specific adjustments */
         @media (max-width: 600px) {
             .container { padding: 20px 15px; }
-            #taskDate { width: 100%; margin-top: -5px; } /* Stack date on mobile */
+            #taskDate { width: 100%; margin-top: -5px; }
             button#addBtn { width: 100%; }
-            
             .task-main { grid-template-columns: 30px 1fr; }
             .meta-actions { 
                 grid-column: 2 / 3; 
-                flex-direction: row; 
-                justify-content: space-between; 
-                width: 100%;
-                margin-top: 8px;
+                flex-direction: row; justify-content: space-between; 
+                width: 100%; margin-top: 8px;
             }
         }
     </style>
@@ -276,7 +261,6 @@
     const taskList = document.getElementById('taskList');
     const uncheckAllBtn = document.getElementById('uncheckAllBtn');
 
-    // Add Task
     addBtn.addEventListener('click', () => {
         const text = taskInput.value.trim();
         const date = taskDate.value;
@@ -292,7 +276,6 @@
         taskInput.value = "";
     });
 
-    // Uncheck All
     uncheckAllBtn.addEventListener('click', async () => {
         if (!confirm("Reset all tasks?")) return;
         const snapshot = await get(tasksRef);
@@ -321,7 +304,6 @@
 
         const tasksArray = Object.entries(data).map(([id, task]) => ({ id, ...task }));
         
-        // Initial Sort by Date
         tasksArray.sort((a, b) => {
             const dateA = a.date ? new Date(a.date) : new Date('9999-12-31');
             const dateB = b.date ? new Date(b.date) : new Date('9999-12-31');
@@ -334,7 +316,7 @@
     function renderTask(task) {
         const li = document.createElement('li');
         li.className = 'task-item draggable';
-        li.setAttribute('draggable', 'true'); // Enable Drag
+        li.setAttribute('draggable', 'true');
         li.dataset.id = task.id;
 
         if (task.completed) li.classList.add('completed');
@@ -344,6 +326,7 @@
             dateDisplay = new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
         }
 
+        // --- CHANGE: Uses <textarea> instead of <input> for remarks ---
         li.innerHTML = `
             <div class="task-main">
                 <div class="cell-checkbox">
@@ -356,7 +339,7 @@
                 <div class="task-content-wrapper">
                     <div class="cell-task">${escapeHtml(task.text)}</div>
                     <div class="remark-container">
-                        <input type="text" class="remark-input main-remark" placeholder="Remark..." value="${escapeHtml(task.remark || '')}">
+                        <textarea rows="1" class="remark-input main-remark" placeholder="Remark...">${escapeHtml(task.remark || '')}</textarea>
                     </div>
                 </div>
 
@@ -373,13 +356,14 @@
             <div class="inline-add-container" id="add-container-${task.id}"></div>
         `;
 
-        // --- Event Listeners ---
-        
-        // Remark Save
         const mainRemark = li.querySelector('.main-remark');
         mainRemark.addEventListener('change', () => update(ref(database, `tasks/${task.id}`), { remark: mainRemark.value }));
+        // Auto-expand textarea
+        mainRemark.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
 
-        // Checkbox
         const mainCheck = li.querySelector('.main-checkbox');
         mainCheck.addEventListener('change', () => {
             const isChecked = mainCheck.checked;
@@ -391,31 +375,22 @@
             update(ref(database), updates);
         });
 
-        // Delete
         li.querySelector('.delete').addEventListener('click', () => {
             if(confirm("Delete task?")) remove(ref(database, `tasks/${task.id}`));
         });
 
-        // Toggle Inline Add Form (New Feature 2)
         const addContainer = li.querySelector(`#add-container-${task.id}`);
         li.querySelector('.add-sub-toggle').addEventListener('click', () => {
-            // Check if form already exists
-            if (addContainer.innerHTML !== '') {
-                addContainer.innerHTML = ''; // Close it if open
-                return;
-            }
-
+            if (addContainer.innerHTML !== '') { addContainer.innerHTML = ''; return; }
             addContainer.innerHTML = `
                 <div class="inline-add-form">
                     <input type="text" class="inline-add-input" placeholder="Type subtask here...">
                     <button class="inline-add-btn">Add</button>
                 </div>
             `;
-
             const input = addContainer.querySelector('.inline-add-input');
             const btn = addContainer.querySelector('.inline-add-btn');
-
-            input.focus(); // Auto focus
+            input.focus();
 
             const submitSub = () => {
                 const subText = input.value.trim();
@@ -425,22 +400,21 @@
                     updates[`tasks/${task.id}/subtasks/${newSubRef.key}`] = { text: subText, completed: false, remark: "" };
                     updates[`tasks/${task.id}/completed`] = false;
                     update(ref(database), updates);
-                    addContainer.innerHTML = ''; // Close after add
+                    addContainer.innerHTML = '';
                 }
             };
-
             btn.addEventListener('click', submitSub);
             input.addEventListener('keypress', (e) => { if(e.key === 'Enter') submitSub(); });
         });
 
-        // Render Subtasks
         const subList = li.querySelector(`#sub-${task.id}`);
         if (task.subtasks) {
             Object.entries(task.subtasks).forEach(([subId, subTask]) => {
                 const subLi = document.createElement('li');
-                subLi.className = `subtask-item draggable-sub`; // Could implement sub-drag later
+                subLi.className = `subtask-item draggable-sub`; 
                 if(subTask.completed) subLi.classList.add('completed');
                 
+                // --- CHANGE: Uses <textarea> for sub-remarks too ---
                 subLi.innerHTML = `
                     <div class="cell-checkbox">
                         <label class="check-container" style="width: 18px; height: 18px;">
@@ -451,7 +425,7 @@
                     <div class="task-content-wrapper">
                         <div class="cell-task">${escapeHtml(subTask.text)}</div>
                         <div class="remark-container">
-                            <input type="text" class="remark-input sub-remark" placeholder="Remark..." value="${escapeHtml(subTask.remark || '')}">
+                            <textarea rows="1" class="remark-input sub-remark" placeholder="Remark...">${escapeHtml(subTask.remark || '')}</textarea>
                         </div>
                     </div>
                     <div class="actions">
@@ -459,16 +433,18 @@
                     </div>
                 `;
 
-                // Subtask Events
                 const subRemark = subLi.querySelector('.sub-remark');
                 subRemark.addEventListener('change', () => update(ref(database, `tasks/${task.id}/subtasks/${subId}`), { remark: subRemark.value }));
+                subRemark.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = (this.scrollHeight) + 'px';
+                });
 
                 const subCheck = subLi.querySelector('.sub-checkbox');
                 subCheck.addEventListener('change', () => {
                     const isNowChecked = subCheck.checked;
                     const updates = {};
                     updates[`tasks/${task.id}/subtasks/${subId}/completed`] = isNowChecked;
-                    // Parent Check Logic
                     let allSiblingsChecked = true;
                     Object.entries(task.subtasks).forEach(([k, v]) => {
                         if (k === subId) { if (!isNowChecked) allSiblingsChecked = false; } 
@@ -483,21 +459,14 @@
             });
         }
 
-        // --- DRAG AND DROP EVENTS ---
-        li.addEventListener('dragstart', () => {
-            li.classList.add('dragging');
-        });
-
-        li.addEventListener('dragend', () => {
-            li.classList.remove('dragging');
-        });
+        li.addEventListener('dragstart', () => { li.classList.add('dragging'); });
+        li.addEventListener('dragend', () => { li.classList.remove('dragging'); });
 
         taskList.appendChild(li);
     }
 
-    // --- DRAG CONTAINER LOGIC ---
     taskList.addEventListener('dragover', e => {
-        e.preventDefault(); // Enable dropping
+        e.preventDefault();
         const afterElement = getDragAfterElement(taskList, e.clientY);
         const draggable = document.querySelector('.dragging');
         if (afterElement == null) {
@@ -507,13 +476,11 @@
         }
     });
 
-    // Helper to find position
     function getDragAfterElement(container, y) {
         const draggableElements = [...container.querySelectorAll('.draggable:not(.dragging)')];
-
         return draggableElements.reduce((closest, child) => {
             const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2; // Distance from center of box
+            const offset = y - box.top - box.height / 2;
             if (offset < 0 && offset > closest.offset) {
                 return { offset: offset, element: child };
             } else {
