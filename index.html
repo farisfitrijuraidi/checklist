@@ -32,7 +32,7 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             background: var(--card-bg);
             padding: 40px;
             border-radius: 16px;
@@ -56,9 +56,7 @@
         }
         .reset-btn:hover { background: var(--bg-color); color: var(--accent); border-color: var(--accent); }
 
-        .input-group { 
-            display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; 
-        }
+        .input-group { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
         
         input {
             padding: 12px 15px; border: 2px solid var(--border);
@@ -72,8 +70,7 @@
 
         button#addBtn {
             padding: 12px 24px; background: var(--accent); color: white;
-            border: none; border-radius: 8px; cursor: pointer; font-weight: 600; 
-            flex: 0 0 auto;
+            border: none; border-radius: 8px; cursor: pointer; font-weight: 600; flex: 0 0 auto;
         }
         button#addBtn:hover { opacity: 0.9; }
 
@@ -89,61 +86,52 @@
             overflow: hidden; transition: box-shadow 0.2s ease, transform 0.1s;
         }
         
+        /* --- MAIN GRID LAYOUT --- */
         .task-main { 
-            padding: 16px; 
+            padding: 16px 16px 8px 16px; /* Less bottom padding because description is below */
             display: grid;
-            grid-template-columns: 30px 1fr auto; 
+            /* Check | Task | Remark | Date | Actions */
+            grid-template-columns: 30px 2fr 1.5fr auto auto; 
             gap: 15px;
             align-items: start;
         }
 
         .cell-checkbox { padding-top: 4px; }
         
-        .task-content-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            min-width: 0;
-        }
-
         .cell-task { 
             font-size: 1.05rem; 
             font-weight: 500; 
             word-wrap: break-word;
             line-height: 1.4;
+            padding-top: 2px;
         }
 
-        .remark-container { width: 100%; }
-
-        /* --- THE FIX: TEXTAREA STYLING --- */
-        .remark-input {
+        /* Common Textarea Style */
+        .auto-textarea {
             width: 100%; 
-            padding: 8px 10px; 
-            border: 1px solid var(--border);
+            padding: 6px 10px; 
+            border: 1px solid transparent;
             border-radius: 6px; 
             font-size: 0.9rem; 
-            background: #fafafa; 
+            background: transparent; 
             color: var(--text-muted);
             box-sizing: border-box;
-            font-family: inherit; /* Ensure font matches */
-            resize: vertical;     /* Allow user to drag height */
-            min-height: 38px;     /* Minimum height */
-            overflow: hidden;     /* Hide scrollbar if auto-expanding */
+            font-family: inherit;
+            resize: none; /* Auto-resize handles this */
+            min-height: 34px;
+            overflow: hidden;
+            transition: all 0.2s;
         }
-        .remark-input:focus {
-            border-color: var(--accent); background: white; color: var(--text-main); outline: none;
+        .auto-textarea:focus, .auto-textarea:hover {
+            border-color: var(--border); background: #fafafa; color: var(--text-main); outline: none;
         }
+        .auto-textarea:focus { background: white; border-color: var(--accent); }
 
-        .meta-actions {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
-        }
+        .remark-input { font-style: italic; } /* Distinguish remark visually */
 
-        .cell-date { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; margin-bottom: 4px; }
+        .cell-date { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; padding-top: 8px; }
         
-        .actions { display: flex; gap: 5px; }
+        .actions { display: flex; gap: 5px; padding-top: 4px; }
         
         .icon-btn {
             background: none; border: 1px solid transparent; color: var(--text-muted);
@@ -154,18 +142,41 @@
         .icon-btn.delete:hover { color: var(--danger); background-color: var(--danger-bg); border-color: var(--danger); }
         .drag-handle { cursor: grab; color: #b2bec3; }
 
-        .subtask-list { background-color: var(--subtask-bg); border-top: 1px solid var(--border); }
+        /* --- DESCRIPTION ROW --- */
+        .description-row {
+            padding: 0 16px 16px 61px; /* Indent to align with task text (30px check + 15px gap + 16px pad) */
+            border-bottom: 1px solid #f0f0f0; /* Subtle separator from subtasks */
+        }
+        .description-input {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.02);
+            border-radius: 6px;
+            padding: 8px;
+            width: 100%;
+        }
+        .description-input:focus { background: white; }
+
+        /* --- SUBTASKS --- */
+        .subtask-list { background-color: var(--subtask-bg); }
         
         .subtask-item {
-            padding: 12px 16px 12px 45px;
+            padding: 8px 16px 8px 45px;
             border-bottom: 1px solid #eee;
             display: grid;
-            grid-template-columns: 24px 1fr auto;
+            /* Match Main Grid: Check | Task | Remark | (Empty Date) | Actions */
+            grid-template-columns: 24px 2fr 1.5fr auto auto;
             gap: 12px;
             align-items: start;
         }
         .subtask-item:last-child { border-bottom: none; }
         .subtask-item .cell-task { font-size: 0.95rem; color: #4a5568; }
+
+        /* Subtask Description Row */
+        .sub-description-row {
+            padding: 0 16px 10px 81px; /* Deeper indent */
+            border-bottom: 1px solid #eee;
+        }
 
         .inline-add-form {
             padding: 10px 16px 10px 45px;
@@ -196,20 +207,26 @@
         }
         .check-container input:checked ~ .checkmark:after { display: block; }
 
-        .completed .cell-task, .completed .cell-date, .completed .remark-input {
+        .completed .cell-task, .completed .cell-date, .completed .auto-textarea {
             text-decoration: line-through; opacity: 0.6;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .container { padding: 20px 15px; }
             #taskDate { width: 100%; margin-top: -5px; }
             button#addBtn { width: 100%; }
-            .task-main { grid-template-columns: 30px 1fr; }
-            .meta-actions { 
-                grid-column: 2 / 3; 
-                flex-direction: row; justify-content: space-between; 
-                width: 100%; margin-top: 8px;
+            
+            /* Mobile Stack Layout */
+            .task-main, .subtask-item { 
+                grid-template-columns: 30px 1fr auto; /* Check | Task | Actions */
+                gap: 10px;
             }
+            /* Move Remark to new row on mobile */
+            .cell-remark { grid-column: 2 / -1; }
+            .cell-date { display: none; } /* Hide date to save space, or move it */
+            
+            .description-row { padding-left: 16px; } /* Reset indent on mobile */
+            .sub-description-row { padding-left: 45px; }
         }
     </style>
 </head>
@@ -261,10 +278,22 @@
     const taskList = document.getElementById('taskList');
     const uncheckAllBtn = document.getElementById('uncheckAllBtn');
 
-    // Helper to Resize Textarea
+    // Helper: Resize Textarea
     function autoResize(el) {
         el.style.height = 'auto';
         el.style.height = el.scrollHeight + 'px';
+    }
+
+    // Helper: Update Order in Firebase after Drag
+    function updateOrder() {
+        const items = [...document.querySelectorAll('#taskList > li.task-item')];
+        const updates = {};
+        items.forEach((item, index) => {
+            const id = item.dataset.id;
+            // We only update the order field
+            updates[`tasks/${id}/order`] = index;
+        });
+        update(ref(database), updates);
     }
 
     addBtn.addEventListener('click', () => {
@@ -277,6 +306,8 @@
             date: date,
             completed: false,
             remark: "",
+            description: "", // New Field
+            order: Date.now(), // Default order = timestamp (bottom of list)
             createdAt: Date.now()
         });
         taskInput.value = "";
@@ -310,10 +341,11 @@
 
         const tasksArray = Object.entries(data).map(([id, task]) => ({ id, ...task }));
         
+        // --- SORT BY ORDER FIELD ---
         tasksArray.sort((a, b) => {
-            const dateA = a.date ? new Date(a.date) : new Date('9999-12-31');
-            const dateB = b.date ? new Date(b.date) : new Date('9999-12-31');
-            return dateA - dateB;
+            const orderA = a.order !== undefined ? a.order : a.createdAt; // Fallback to created time
+            const orderB = b.order !== undefined ? b.order : b.createdAt;
+            return orderA - orderB;
         });
 
         tasksArray.forEach(task => renderTask(task));
@@ -341,34 +373,44 @@
                     </label>
                 </div>
                 
-                <div class="task-content-wrapper">
-                    <div class="cell-task">${escapeHtml(task.text)}</div>
-                    <div class="remark-container">
-                        <textarea rows="1" class="remark-input main-remark" placeholder="Remark...">${escapeHtml(task.remark || '')}</textarea>
-                    </div>
+                <div class="cell-task">${escapeHtml(task.text)}</div>
+                
+                <div class="cell-remark">
+                    <textarea rows="1" class="auto-textarea remark-input main-remark" placeholder="Remark...">${escapeHtml(task.remark || '')}</textarea>
                 </div>
 
-                <div class="meta-actions">
-                    <div class="cell-date">${dateDisplay}</div>
-                    <div class="actions">
-                        <span class="icon-btn drag-handle" title="Drag to reorder">::</span>
-                        <button class="icon-btn add-sub-toggle" title="Add Subtask">＋</button>
-                        <button class="icon-btn delete" title="Delete">×</button>
-                    </div>
+                <div class="cell-date">${dateDisplay}</div>
+
+                <div class="actions">
+                    <span class="icon-btn drag-handle" title="Drag to reorder">::</span>
+                    <button class="icon-btn add-sub-toggle" title="Add Subtask">＋</button>
+                    <button class="icon-btn delete" title="Delete">×</button>
                 </div>
             </div>
+            
+            <div class="description-row">
+                <textarea rows="1" class="auto-textarea description-input main-desc" placeholder="Add description...">${escapeHtml(task.description || '')}</textarea>
+            </div>
+
             <ul class="subtask-list" id="sub-${task.id}"></ul>
             <div class="inline-add-container" id="add-container-${task.id}"></div>
         `;
 
-        // Remark Logic
-        const mainRemark = li.querySelector('.main-remark');
-        // FIX: Resize immediately on load
-        setTimeout(() => autoResize(mainRemark), 0); 
+        // --- Event Listeners ---
         
-        mainRemark.addEventListener('change', () => update(ref(database, `tasks/${task.id}`), { remark: mainRemark.value }));
-        mainRemark.addEventListener('input', function() { autoResize(this); });
+        // Description
+        const mainDesc = li.querySelector('.main-desc');
+        setTimeout(() => autoResize(mainDesc), 0);
+        mainDesc.addEventListener('input', function() { autoResize(this); });
+        mainDesc.addEventListener('change', () => update(ref(database, `tasks/${task.id}`), { description: mainDesc.value }));
 
+        // Remark
+        const mainRemark = li.querySelector('.main-remark');
+        setTimeout(() => autoResize(mainRemark), 0);
+        mainRemark.addEventListener('input', function() { autoResize(this); });
+        mainRemark.addEventListener('change', () => update(ref(database, `tasks/${task.id}`), { remark: mainRemark.value }));
+
+        // Checkbox
         const mainCheck = li.querySelector('.main-checkbox');
         mainCheck.addEventListener('change', () => {
             const isChecked = mainCheck.checked;
@@ -380,10 +422,12 @@
             update(ref(database), updates);
         });
 
+        // Delete
         li.querySelector('.delete').addEventListener('click', () => {
             if(confirm("Delete task?")) remove(ref(database, `tasks/${task.id}`));
         });
 
+        // Inline Add
         const addContainer = li.querySelector(`#add-container-${task.id}`);
         li.querySelector('.add-sub-toggle').addEventListener('click', () => {
             if (addContainer.innerHTML !== '') { addContainer.innerHTML = ''; return; }
@@ -402,7 +446,7 @@
                 if(subText) {
                     const updates = {};
                     const newSubRef = push(ref(database, `tasks/${task.id}/subtasks`));
-                    updates[`tasks/${task.id}/subtasks/${newSubRef.key}`] = { text: subText, completed: false, remark: "" };
+                    updates[`tasks/${task.id}/subtasks/${newSubRef.key}`] = { text: subText, completed: false, remark: "", description: "" };
                     updates[`tasks/${task.id}/completed`] = false;
                     update(ref(database), updates);
                     addContainer.innerHTML = '';
@@ -412,6 +456,7 @@
             input.addEventListener('keypress', (e) => { if(e.key === 'Enter') submitSub(); });
         });
 
+        // Subtasks
         const subList = li.querySelector(`#sub-${task.id}`);
         if (task.subtasks) {
             Object.entries(task.subtasks).forEach(([subId, subTask]) => {
@@ -426,23 +471,35 @@
                             <span class="checkmark" style="width: 18px; height: 18px;"></span>
                         </label>
                     </div>
-                    <div class="task-content-wrapper">
-                        <div class="cell-task">${escapeHtml(subTask.text)}</div>
-                        <div class="remark-container">
-                            <textarea rows="1" class="remark-input sub-remark" placeholder="Remark...">${escapeHtml(subTask.remark || '')}</textarea>
-                        </div>
+                    
+                    <div class="cell-task">${escapeHtml(subTask.text)}</div>
+                    
+                    <div class="cell-remark">
+                        <textarea rows="1" class="auto-textarea remark-input sub-remark" placeholder="Remark...">${escapeHtml(subTask.remark || '')}</textarea>
                     </div>
+
+                    <div></div>
+
                     <div class="actions">
                         <button class="icon-btn delete-sub" style="font-size: 1rem;">×</button>
                     </div>
                 `;
-
+                
+                // We append description to subtask OUTSIDE the grid, just like main task
+                const subDescDiv = document.createElement('div');
+                subDescDiv.className = 'sub-description-row';
+                subDescDiv.innerHTML = `<textarea rows="1" class="auto-textarea description-input sub-desc" placeholder="Description...">${escapeHtml(subTask.description || '')}</textarea>`;
+                
+                // Logic for Subtask Inputs
                 const subRemark = subLi.querySelector('.sub-remark');
-                // FIX: Resize immediately on load for subtasks too
                 setTimeout(() => autoResize(subRemark), 0);
-
-                subRemark.addEventListener('change', () => update(ref(database, `tasks/${task.id}/subtasks/${subId}`), { remark: subRemark.value }));
                 subRemark.addEventListener('input', function() { autoResize(this); });
+                subRemark.addEventListener('change', () => update(ref(database, `tasks/${task.id}/subtasks/${subId}`), { remark: subRemark.value }));
+
+                const subDesc = subDescDiv.querySelector('.sub-desc');
+                setTimeout(() => autoResize(subDesc), 0);
+                subDesc.addEventListener('input', function() { autoResize(this); });
+                subDesc.addEventListener('change', () => update(ref(database, `tasks/${task.id}/subtasks/${subId}`), { description: subDesc.value }));
 
                 const subCheck = subLi.querySelector('.sub-checkbox');
                 subCheck.addEventListener('change', () => {
@@ -459,16 +516,23 @@
                 });
 
                 subLi.querySelector('.delete-sub').addEventListener('click', () => remove(ref(database, `tasks/${task.id}/subtasks/${subId}`)));
+                
                 subList.appendChild(subLi);
+                subList.appendChild(subDescDiv); // Append desc row after subtask row
             });
         }
 
+        // --- DRAG EVENTS (Update Order on Drop) ---
         li.addEventListener('dragstart', () => { li.classList.add('dragging'); });
-        li.addEventListener('dragend', () => { li.classList.remove('dragging'); });
+        li.addEventListener('dragend', () => { 
+            li.classList.remove('dragging'); 
+            updateOrder(); // <--- CRITICAL: Save new order to Firebase
+        });
 
         taskList.appendChild(li);
     }
 
+    // Drag Container Logic
     taskList.addEventListener('dragover', e => {
         e.preventDefault();
         const afterElement = getDragAfterElement(taskList, e.clientY);
