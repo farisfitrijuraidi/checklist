@@ -32,7 +32,7 @@
 
         .container {
             width: 100%;
-            max-width: 900px;
+            max-width: 950px; /* Slightly wider to fit headers nicely */
             background: var(--card-bg);
             padding: 40px;
             border-radius: 16px;
@@ -80,23 +80,39 @@
 
         ul { list-style: none; padding: 0; margin: 0; }
 
+        /* --- GRID SYSTEM --- */
+        /* Defined in one place so Headers and Rows match perfectly */
+        /* Check(30px) | Task(2fr) | Remark(1.5fr) | Date(90px) | Actions(70px) */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 30px 2fr 1.5fr 90px 70px; 
+            gap: 15px;
+            align-items: start;
+        }
+
+        /* HEADERS */
+        .list-headers {
+            padding: 0 16px 10px 16px;
+            font-size: 0.75rem; 
+            font-weight: 700; 
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--border); 
+            margin-bottom: 10px;
+        }
+
         li.task-item {
             background: white; border: 1px solid var(--border);
             border-radius: 8px; margin-bottom: 12px; padding: 0;
             overflow: hidden; transition: box-shadow 0.2s ease, transform 0.1s;
         }
         
-        /* --- MAIN GRID LAYOUT --- */
         .task-main { 
-            padding: 16px 16px 8px 16px; /* Less bottom padding because description is below */
-            display: grid;
-            /* Check | Task | Remark | Date | Actions */
-            grid-template-columns: 30px 2fr 1.5fr auto auto; 
-            gap: 15px;
-            align-items: start;
+            padding: 16px 16px 8px 16px;
         }
 
-        .cell-checkbox { padding-top: 4px; }
+        .cell-checkbox { padding-top: 4px; display: flex; justify-content: center; }
         
         .cell-task { 
             font-size: 1.05rem; 
@@ -106,7 +122,6 @@
             padding-top: 2px;
         }
 
-        /* Common Textarea Style */
         .auto-textarea {
             width: 100%; 
             padding: 6px 10px; 
@@ -117,7 +132,7 @@
             color: var(--text-muted);
             box-sizing: border-box;
             font-family: inherit;
-            resize: none; /* Auto-resize handles this */
+            resize: none; 
             min-height: 34px;
             overflow: hidden;
             transition: all 0.2s;
@@ -127,11 +142,17 @@
         }
         .auto-textarea:focus { background: white; border-color: var(--accent); }
 
-        .remark-input { font-style: italic; } /* Distinguish remark visually */
+        .remark-input { font-style: italic; }
 
-        .cell-date { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; padding-top: 8px; }
+        .cell-date { 
+            font-size: 0.8rem; 
+            color: var(--text-muted); 
+            white-space: nowrap; 
+            padding-top: 8px; 
+            text-align: right; 
+        }
         
-        .actions { display: flex; gap: 5px; padding-top: 4px; }
+        .actions { display: flex; gap: 5px; padding-top: 4px; justify-content: flex-end; }
         
         .icon-btn {
             background: none; border: 1px solid transparent; color: var(--text-muted);
@@ -142,10 +163,10 @@
         .icon-btn.delete:hover { color: var(--danger); background-color: var(--danger-bg); border-color: var(--danger); }
         .drag-handle { cursor: grab; color: #b2bec3; }
 
-        /* --- DESCRIPTION ROW --- */
+        /* Description Row */
         .description-row {
-            padding: 0 16px 16px 61px; /* Indent to align with task text (30px check + 15px gap + 16px pad) */
-            border-bottom: 1px solid #f0f0f0; /* Subtle separator from subtasks */
+            padding: 0 16px 16px 61px;
+            border-bottom: 1px solid #f0f0f0;
         }
         .description-input {
             font-size: 0.85rem;
@@ -157,24 +178,19 @@
         }
         .description-input:focus { background: white; }
 
-        /* --- SUBTASKS --- */
+        /* Subtasks */
         .subtask-list { background-color: var(--subtask-bg); }
         
         .subtask-item {
             padding: 8px 16px 8px 45px;
             border-bottom: 1px solid #eee;
-            display: grid;
-            /* Match Main Grid: Check | Task | Remark | (Empty Date) | Actions */
-            grid-template-columns: 24px 2fr 1.5fr auto auto;
-            gap: 12px;
-            align-items: start;
         }
         .subtask-item:last-child { border-bottom: none; }
         .subtask-item .cell-task { font-size: 0.95rem; color: #4a5568; }
 
         /* Subtask Description Row */
         .sub-description-row {
-            padding: 0 16px 10px 81px; /* Deeper indent */
+            padding: 0 16px 10px 81px;
             border-bottom: 1px solid #eee;
         }
 
@@ -216,16 +232,18 @@
             #taskDate { width: 100%; margin-top: -5px; }
             button#addBtn { width: 100%; }
             
+            /* HIDE HEADERS ON MOBILE */
+            .list-headers { display: none; }
+
             /* Mobile Stack Layout */
-            .task-main, .subtask-item { 
+            .grid-layout { 
                 grid-template-columns: 30px 1fr auto; /* Check | Task | Actions */
                 gap: 10px;
             }
-            /* Move Remark to new row on mobile */
             .cell-remark { grid-column: 2 / -1; }
-            .cell-date { display: none; } /* Hide date to save space, or move it */
+            .cell-date { display: none; }
             
-            .description-row { padding-left: 16px; } /* Reset indent on mobile */
+            .description-row { padding-left: 16px; }
             .sub-description-row { padding-left: 45px; }
         }
     </style>
@@ -244,6 +262,14 @@
         <input type="text" id="taskInput" placeholder="Add a new task...">
         <input type="date" id="taskDate">
         <button id="addBtn">Add Task</button>
+    </div>
+
+    <div class="list-headers grid-layout">
+        <div style="text-align: center;">DONE</div>
+        <div>TASK</div>
+        <div>REMARK</div>
+        <div style="text-align: right;">DATE</div>
+        <div style="text-align: right;">ACTIONS</div>
     </div>
 
     <ul id="taskList">
@@ -278,19 +304,16 @@
     const taskList = document.getElementById('taskList');
     const uncheckAllBtn = document.getElementById('uncheckAllBtn');
 
-    // Helper: Resize Textarea
     function autoResize(el) {
         el.style.height = 'auto';
         el.style.height = el.scrollHeight + 'px';
     }
 
-    // Helper: Update Order in Firebase after Drag
     function updateOrder() {
         const items = [...document.querySelectorAll('#taskList > li.task-item')];
         const updates = {};
         items.forEach((item, index) => {
             const id = item.dataset.id;
-            // We only update the order field
             updates[`tasks/${id}/order`] = index;
         });
         update(ref(database), updates);
@@ -306,8 +329,8 @@
             date: date,
             completed: false,
             remark: "",
-            description: "", // New Field
-            order: Date.now(), // Default order = timestamp (bottom of list)
+            description: "",
+            order: Date.now(),
             createdAt: Date.now()
         });
         taskInput.value = "";
@@ -341,9 +364,8 @@
 
         const tasksArray = Object.entries(data).map(([id, task]) => ({ id, ...task }));
         
-        // --- SORT BY ORDER FIELD ---
         tasksArray.sort((a, b) => {
-            const orderA = a.order !== undefined ? a.order : a.createdAt; // Fallback to created time
+            const orderA = a.order !== undefined ? a.order : a.createdAt;
             const orderB = b.order !== undefined ? b.order : b.createdAt;
             return orderA - orderB;
         });
@@ -364,8 +386,9 @@
             dateDisplay = new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
         }
 
+        // Apply grid-layout class to main task row
         li.innerHTML = `
-            <div class="task-main">
+            <div class="task-main grid-layout">
                 <div class="cell-checkbox">
                     <label class="check-container">
                         <input type="checkbox" ${task.completed ? 'checked' : ''} class="main-checkbox">
@@ -396,21 +419,17 @@
             <div class="inline-add-container" id="add-container-${task.id}"></div>
         `;
 
-        // --- Event Listeners ---
-        
-        // Description
+        // Listeners
         const mainDesc = li.querySelector('.main-desc');
         setTimeout(() => autoResize(mainDesc), 0);
         mainDesc.addEventListener('input', function() { autoResize(this); });
         mainDesc.addEventListener('change', () => update(ref(database, `tasks/${task.id}`), { description: mainDesc.value }));
 
-        // Remark
         const mainRemark = li.querySelector('.main-remark');
         setTimeout(() => autoResize(mainRemark), 0);
         mainRemark.addEventListener('input', function() { autoResize(this); });
         mainRemark.addEventListener('change', () => update(ref(database, `tasks/${task.id}`), { remark: mainRemark.value }));
 
-        // Checkbox
         const mainCheck = li.querySelector('.main-checkbox');
         mainCheck.addEventListener('change', () => {
             const isChecked = mainCheck.checked;
@@ -422,12 +441,10 @@
             update(ref(database), updates);
         });
 
-        // Delete
         li.querySelector('.delete').addEventListener('click', () => {
             if(confirm("Delete task?")) remove(ref(database, `tasks/${task.id}`));
         });
 
-        // Inline Add
         const addContainer = li.querySelector(`#add-container-${task.id}`);
         li.querySelector('.add-sub-toggle').addEventListener('click', () => {
             if (addContainer.innerHTML !== '') { addContainer.innerHTML = ''; return; }
@@ -456,12 +473,12 @@
             input.addEventListener('keypress', (e) => { if(e.key === 'Enter') submitSub(); });
         });
 
-        // Subtasks
         const subList = li.querySelector(`#sub-${task.id}`);
         if (task.subtasks) {
             Object.entries(task.subtasks).forEach(([subId, subTask]) => {
                 const subLi = document.createElement('li');
-                subLi.className = `subtask-item draggable-sub`; 
+                // Apply grid-layout here too
+                subLi.className = `subtask-item grid-layout draggable-sub`; 
                 if(subTask.completed) subLi.classList.add('completed');
                 
                 subLi.innerHTML = `
@@ -485,12 +502,10 @@
                     </div>
                 `;
                 
-                // We append description to subtask OUTSIDE the grid, just like main task
                 const subDescDiv = document.createElement('div');
                 subDescDiv.className = 'sub-description-row';
                 subDescDiv.innerHTML = `<textarea rows="1" class="auto-textarea description-input sub-desc" placeholder="Description...">${escapeHtml(subTask.description || '')}</textarea>`;
                 
-                // Logic for Subtask Inputs
                 const subRemark = subLi.querySelector('.sub-remark');
                 setTimeout(() => autoResize(subRemark), 0);
                 subRemark.addEventListener('input', function() { autoResize(this); });
@@ -518,21 +533,19 @@
                 subLi.querySelector('.delete-sub').addEventListener('click', () => remove(ref(database, `tasks/${task.id}/subtasks/${subId}`)));
                 
                 subList.appendChild(subLi);
-                subList.appendChild(subDescDiv); // Append desc row after subtask row
+                subList.appendChild(subDescDiv);
             });
         }
 
-        // --- DRAG EVENTS (Update Order on Drop) ---
         li.addEventListener('dragstart', () => { li.classList.add('dragging'); });
         li.addEventListener('dragend', () => { 
             li.classList.remove('dragging'); 
-            updateOrder(); // <--- CRITICAL: Save new order to Firebase
+            updateOrder(); 
         });
 
         taskList.appendChild(li);
     }
 
-    // Drag Container Logic
     taskList.addEventListener('dragover', e => {
         e.preventDefault();
         const afterElement = getDragAfterElement(taskList, e.clientY);
