@@ -16,6 +16,8 @@
             --danger-bg: #fff5f5;
             --subtask-bg: #f8f9fa;
             --drag-bg: #e2e8f0;
+            --tab-active: #2d3436;
+            --tab-inactive: #e0e0e0;
         }
 
         body {
@@ -32,14 +34,14 @@
 
         .container {
             width: 100%;
-            max-width: 950px; /* Slightly wider to fit headers nicely */
+            max-width: 950px;
             background: var(--card-bg);
             padding: 40px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
 
-        header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        header { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
         
         .status-dot {
@@ -55,6 +57,37 @@
             transition: all 0.2s; white-space: nowrap;
         }
         .reset-btn:hover { background: var(--bg-color); color: var(--accent); border-color: var(--accent); }
+
+        /* --- TABS STYLE START --- */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            overflow-x: auto; /* Scroll on mobile if too many tabs */
+        }
+        
+        .tab-btn {
+            padding: 8px 20px;
+            border: none;
+            background-color: var(--tab-inactive);
+            color: var(--text-muted);
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        
+        .tab-btn:hover { background-color: #dcdcdc; }
+        
+        .tab-btn.active {
+            background-color: var(--tab-active);
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        /* --- TABS STYLE END --- */
 
         .input-group { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
         
@@ -80,9 +113,6 @@
 
         ul { list-style: none; padding: 0; margin: 0; }
 
-        /* --- GRID SYSTEM --- */
-        /* Defined in one place so Headers and Rows match perfectly */
-        /* Check(30px) | Task(2fr) | Remark(1.5fr) | Date(90px) | Actions(70px) */
         .grid-layout {
             display: grid;
             grid-template-columns: 30px 2fr 1.5fr 90px 70px; 
@@ -90,7 +120,6 @@
             align-items: start;
         }
 
-        /* HEADERS */
         .list-headers {
             padding: 0 16px 10px 16px;
             font-size: 0.75rem; 
@@ -108,9 +137,7 @@
             overflow: hidden; transition: box-shadow 0.2s ease, transform 0.1s;
         }
         
-        .task-main { 
-            padding: 16px 16px 8px 16px;
-        }
+        .task-main { padding: 16px 16px 8px 16px; }
 
         .cell-checkbox { padding-top: 4px; display: flex; justify-content: center; }
         
@@ -163,7 +190,6 @@
         .icon-btn.delete:hover { color: var(--danger); background-color: var(--danger-bg); border-color: var(--danger); }
         .drag-handle { cursor: grab; color: #b2bec3; }
 
-        /* Description Row */
         .description-row {
             padding: 0 16px 16px 61px;
             border-bottom: 1px solid #f0f0f0;
@@ -178,7 +204,6 @@
         }
         .description-input:focus { background: white; }
 
-        /* Subtasks */
         .subtask-list { background-color: var(--subtask-bg); }
         
         .subtask-item {
@@ -188,7 +213,6 @@
         .subtask-item:last-child { border-bottom: none; }
         .subtask-item .cell-task { font-size: 0.95rem; color: #4a5568; }
 
-        /* Subtask Description Row */
         .sub-description-row {
             padding: 0 16px 10px 81px;
             border-bottom: 1px solid #eee;
@@ -231,18 +255,13 @@
             .container { padding: 20px 15px; }
             #taskDate { width: 100%; margin-top: -5px; }
             button#addBtn { width: 100%; }
-            
-            /* HIDE HEADERS ON MOBILE */
             .list-headers { display: none; }
-
-            /* Mobile Stack Layout */
             .grid-layout { 
-                grid-template-columns: 30px 1fr auto; /* Check | Task | Actions */
+                grid-template-columns: 30px 1fr auto;
                 gap: 10px;
             }
             .cell-remark { grid-column: 2 / -1; }
             .cell-date { display: none; }
-            
             .description-row { padding-left: 16px; }
             .sub-description-row { padding-left: 45px; }
         }
@@ -258,8 +277,15 @@
         <button id="uncheckAllBtn" class="reset-btn">Reset All</button>
     </header>
 
+    <div class="tabs">
+        <button class="tab-btn active" onclick="setCategory('home')">Home</button>
+        <button class="tab-btn" onclick="setCategory('work')">Work</button>
+        <button class="tab-btn" onclick="setCategory('school')">School</button>
+        <button class="tab-btn" onclick="setCategory('other')">Other</button>
+    </div>
+
     <div class="input-group">
-        <input type="text" id="taskInput" placeholder="Add a new task...">
+        <input type="text" id="taskInput" placeholder="Add a new task to 'Home'...">
         <input type="date" id="taskDate">
         <button id="addBtn">Add Task</button>
     </div>
@@ -282,7 +308,6 @@
     import { getDatabase, ref, push, onValue, remove, update, get } 
     from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    // --- PASTE YOUR FIREBASE CONFIG HERE ---
     const firebaseConfig = {
         apiKey: "AIzaSyBnShirXax3VIupSFrOy8Ge2PZQbUvIcH0",
         authDomain: "checklist-saniy.firebaseapp.com",
@@ -292,7 +317,6 @@
         messagingSenderId: "198132106862",
         appId: "1:198132106862:web:370d2b4a83c22430e5c87f"
     };
-    // ---------------------------------------
 
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
@@ -303,6 +327,26 @@
     const taskDate = document.getElementById('taskDate');
     const taskList = document.getElementById('taskList');
     const uncheckAllBtn = document.getElementById('uncheckAllBtn');
+
+    // --- NEW: Category Logic ---
+    let currentCategory = 'home';
+    let allTasksData = {}; // Store raw data to re-filter locally without re-fetching
+
+    // Expose this function to the window so HTML buttons can call it
+    window.setCategory = function(cat) {
+        currentCategory = cat;
+        
+        // Update Buttons Visuals
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active'); // "event" works because of onclick
+
+        // Update Input Placeholder
+        taskInput.placeholder = `Add a new task to '${cat.charAt(0).toUpperCase() + cat.slice(1)}'...`;
+
+        // Re-render list
+        renderAllTasks();
+    };
+    // ---------------------------
 
     function autoResize(el) {
         el.style.height = 'auto';
@@ -327,6 +371,7 @@
         push(tasksRef, {
             text: text,
             date: date,
+            category: currentCategory, // SAVE THE CATEGORY
             completed: false,
             remark: "",
             description: "",
@@ -337,13 +382,15 @@
     });
 
     uncheckAllBtn.addEventListener('click', async () => {
-        if (!confirm("Reset all tasks?")) return;
-        const snapshot = await get(tasksRef);
-        if (snapshot.exists()) {
-            const updates = {};
-            snapshot.forEach((childSnapshot) => {
-                const task = childSnapshot.val();
-                const key = childSnapshot.key;
+        if (!confirm(`Reset all tasks in '${currentCategory}'?`)) return;
+        
+        // We only reset tasks in the CURRENT category
+        const updates = {};
+        Object.entries(allTasksData).forEach(([key, task]) => {
+            // Check if task belongs to current category (or default home)
+            const taskCat = task.category || 'home'; 
+            
+            if (taskCat === currentCategory) {
                 if (task.completed) updates[`tasks/${key}/completed`] = false;
                 if (task.subtasks) {
                     Object.keys(task.subtasks).forEach(subKey => {
@@ -352,26 +399,47 @@
                         }
                     });
                 }
-            });
-            update(ref(database), updates);
-        }
+            }
+        });
+
+        if (Object.keys(updates).length > 0) update(ref(database), updates);
     });
 
     onValue(tasksRef, (snapshot) => {
-        taskList.innerHTML = "";
         const data = snapshot.val();
-        if (!data) { taskList.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">No tasks found.</div>'; return; }
+        allTasksData = data || {}; // Save to global variable
+        renderAllTasks();
+    });
 
-        const tasksArray = Object.entries(data).map(([id, task]) => ({ id, ...task }));
+    function renderAllTasks() {
+        taskList.innerHTML = "";
         
-        tasksArray.sort((a, b) => {
+        if (Object.keys(allTasksData).length === 0) {
+            taskList.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;">No tasks found.</div>'; 
+            return;
+        }
+
+        const tasksArray = Object.entries(allTasksData).map(([id, task]) => ({ id, ...task }));
+        
+        // Filter by Category
+        const filteredTasks = tasksArray.filter(task => {
+            const taskCat = task.category || 'home'; // Handle old tasks with no category
+            return taskCat === currentCategory;
+        });
+
+        if (filteredTasks.length === 0) {
+             taskList.innerHTML = `<div style="text-align:center; padding:20px; color:#aaa;">No tasks in '${currentCategory}'.</div>`; 
+             return;
+        }
+
+        filteredTasks.sort((a, b) => {
             const orderA = a.order !== undefined ? a.order : a.createdAt;
             const orderB = b.order !== undefined ? b.order : b.createdAt;
             return orderA - orderB;
         });
 
-        tasksArray.forEach(task => renderTask(task));
-    });
+        filteredTasks.forEach(task => renderTask(task));
+    }
 
     function renderTask(task) {
         const li = document.createElement('li');
@@ -386,7 +454,6 @@
             dateDisplay = new Date(task.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
         }
 
-        // Apply grid-layout class to main task row
         li.innerHTML = `
             <div class="task-main grid-layout">
                 <div class="cell-checkbox">
@@ -477,7 +544,6 @@
         if (task.subtasks) {
             Object.entries(task.subtasks).forEach(([subId, subTask]) => {
                 const subLi = document.createElement('li');
-                // Apply grid-layout here too
                 subLi.className = `subtask-item grid-layout draggable-sub`; 
                 if(subTask.completed) subLi.classList.add('completed');
                 
