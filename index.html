@@ -16,8 +16,9 @@
             --danger-bg: #fff5f5;
             --subtask-bg: #f8f9fa;
             --drag-bg: #e2e8f0;
-            --tab-active: #2d3436;
-            --tab-inactive: #e0e0e0;
+            --tab-active-bg: #ffffff;
+            --tab-inactive-bg: #e1e4e8;
+            --tab-border: #d1d5db;
         }
 
         body {
@@ -58,36 +59,60 @@
         }
         .reset-btn:hover { background: var(--bg-color); color: var(--accent); border-color: var(--accent); }
 
-        /* --- TABS STYLE START --- */
-        .tabs {
+        /* --- CHROME-STYLE TABS --- */
+        .tabs-container {
             display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
+            align-items: flex-end;
+            gap: 4px;
             border-bottom: 1px solid var(--border);
-            padding-bottom: 15px;
-            overflow-x: auto; /* Scroll on mobile if too many tabs */
+            margin-bottom: 25px;
+            overflow-x: auto;
+            padding-top: 10px;
         }
         
         .tab-btn {
-            padding: 8px 20px;
-            border: none;
-            background-color: var(--tab-inactive);
+            padding: 10px 20px;
+            border: 1px solid transparent;
+            background-color: var(--tab-inactive-bg);
             color: var(--text-muted);
-            border-radius: 20px;
+            border-radius: 8px 8px 0 0; /* Rounded top corners only */
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 500;
             font-size: 0.9rem;
             transition: all 0.2s ease;
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
         }
         
         .tab-btn:hover { background-color: #dcdcdc; }
         
         .tab-btn.active {
-            background-color: var(--tab-active);
-            color: white;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            background-color: var(--card-bg); /* Merge with body */
+            color: var(--text-main);
+            font-weight: bold;
+            border: 1px solid var(--border);
+            border-bottom: 1px solid var(--card-bg); /* Hide bottom border to blend */
+            margin-bottom: -1px; /* Push down to cover line */
+            z-index: 2;
         }
-        /* --- TABS STYLE END --- */
+
+        .add-tab-btn {
+            padding: 8px 12px;
+            font-size: 1.2rem;
+            line-height: 1;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 50%;
+            margin-left: 5px;
+            margin-bottom: 5px;
+        }
+        .add-tab-btn:hover { background-color: var(--bg-color); color: var(--accent); }
+        /* ------------------------- */
 
         .input-group { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
         
@@ -277,15 +302,11 @@
         <button id="uncheckAllBtn" class="reset-btn">Reset All</button>
     </header>
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="setCategory('home')">Home</button>
-        <button class="tab-btn" onclick="setCategory('work')">Work</button>
-        <button class="tab-btn" onclick="setCategory('school')">School</button>
-        <button class="tab-btn" onclick="setCategory('other')">Other</button>
-    </div>
+    <div class="tabs-container" id="tabsContainer">
+        </div>
 
     <div class="input-group">
-        <input type="text" id="taskInput" placeholder="Add a new task to 'Home'...">
+        <input type="text" id="taskInput" placeholder="Add a new task...">
         <input type="date" id="taskDate">
         <button id="addBtn">Add Task</button>
     </div>
@@ -305,7 +326,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, push, onValue, remove, update, get } 
+    import { getDatabase, ref, push, onValue, remove, update, get, set } 
     from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -321,32 +342,122 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
     const tasksRef = ref(database, 'tasks');
+    const tabsRef = ref(database, 'tabs');
 
     const addBtn = document.getElementById('addBtn');
     const taskInput = document.getElementById('taskInput');
     const taskDate = document.getElementById('taskDate');
     const taskList = document.getElementById('taskList');
     const uncheckAllBtn = document.getElementById('uncheckAllBtn');
+    const tabsContainer = document.getElementById('tabsContainer');
 
-    // --- NEW: Category Logic ---
-    let currentCategory = 'home';
-    let allTasksData = {}; // Store raw data to re-filter locally without re-fetching
+    // Default "Home" tab setup for first-time use
+    let currentTabId = 'home'; 
+    let allTasksData = {};
+    let allTabsData = {};
 
-    // Expose this function to the window so HTML buttons can call it
-    window.setCategory = function(cat) {
-        currentCategory = cat;
-        
-        // Update Buttons Visuals
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active'); // "event" works because of onclick
+    // 1. Initialize Default Tab if DB is empty
+    get(tabsRef).then((snapshot) => {
+        if (!snapshot.exists()) {
+            set(ref(database, 'tabs/home'), { name: "Home", createdAt: Date.now() });
+        }
+    });
 
-        // Update Input Placeholder
-        taskInput.placeholder = `Add a new task to '${cat.charAt(0).toUpperCase() + cat.slice(1)}'...`;
+    // 2. Render Tabs
+    onValue(tabsRef, (snapshot) => {
+        tabsContainer.innerHTML = "";
+        const data = snapshot.val();
+        allTabsData = data || {};
 
-        // Re-render list
+        if (!allTabsData['home']) {
+             // Fallback if user deleted all tabs, recreate Home
+             set(ref(database, 'tabs/home'), { name: "Home", createdAt: Date.now() });
+        }
+
+        const tabsArray = Object.entries(allTabsData).map(([id, info]) => ({ id, ...info }));
+        tabsArray.sort((a, b) => a.createdAt - b.createdAt);
+
+        // Render Tabs
+        tabsArray.forEach(tab => {
+            const btn = document.createElement('button');
+            btn.className = `tab-btn ${tab.id === currentTabId ? 'active' : ''}`;
+            btn.textContent = tab.name;
+            btn.title = "Double-click to rename, Right-click to delete";
+            
+            // Switch Tab
+            btn.onclick = () => {
+                currentTabId = tab.id;
+                renderTabs(); // to update active class
+                renderAllTasks();
+                taskInput.placeholder = `Add to '${tab.name}'...`;
+            };
+
+            // Rename Tab
+            btn.ondblclick = () => {
+                const newName = prompt("Rename tab:", tab.name);
+                if (newName && newName.trim() !== "") {
+                    update(ref(database, `tabs/${tab.id}`), { name: newName.trim() });
+                }
+            };
+
+            // Delete Tab
+            btn.oncontextmenu = (e) => {
+                e.preventDefault(); // Stop normal menu
+                if (Object.keys(allTabsData).length <= 1) {
+                    alert("You must keep at least one tab.");
+                    return;
+                }
+                if (confirm(`Delete tab '${tab.name}' and ALL its tasks?`)) {
+                    // 1. Find tasks in this tab
+                    const updates = {};
+                    updates[`tabs/${tab.id}`] = null; // Delete tab
+                    
+                    Object.entries(allTasksData).forEach(([taskId, task]) => {
+                        if (task.category === tab.id) {
+                            updates[`tasks/${taskId}`] = null; // Delete linked task
+                        }
+                    });
+                    
+                    update(ref(database), updates);
+                    
+                    // Switch to Home if we deleted current tab
+                    if (currentTabId === tab.id) {
+                        currentTabId = 'home';
+                    }
+                }
+            };
+
+            tabsContainer.appendChild(btn);
+        });
+
+        // Add "+" Button
+        const addTabBtn = document.createElement('button');
+        addTabBtn.className = 'add-tab-btn';
+        addTabBtn.textContent = '+';
+        addTabBtn.title = "Add new tab";
+        addTabBtn.onclick = () => {
+            const name = prompt("Name your new tab:");
+            if (name && name.trim() !== "") {
+                const newRef = push(tabsRef);
+                set(newRef, { name: name.trim(), createdAt: Date.now() });
+                // Automatically switch to new tab
+                currentTabId = newRef.key;
+            }
+        };
+        tabsContainer.appendChild(addTabBtn);
+
+        // Refresh task view in case tab name changed
         renderAllTasks();
-    };
-    // ---------------------------
+    });
+
+    // Helper to just re-run the Active class logic without full re-render
+    function renderTabs() {
+        const btns = tabsContainer.querySelectorAll('.tab-btn');
+        btns.forEach(btn => {
+            if (btn.textContent === allTabsData[currentTabId]?.name) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    }
 
     function autoResize(el) {
         el.style.height = 'auto';
@@ -354,6 +465,7 @@
     }
 
     function updateOrder() {
+        // Only reorder tasks in CURRENT tab
         const items = [...document.querySelectorAll('#taskList > li.task-item')];
         const updates = {};
         items.forEach((item, index) => {
@@ -371,7 +483,7 @@
         push(tasksRef, {
             text: text,
             date: date,
-            category: currentCategory, // SAVE THE CATEGORY
+            category: currentTabId, // Links task to the ID (e.g., "-N7x...")
             completed: false,
             remark: "",
             description: "",
@@ -382,15 +494,15 @@
     });
 
     uncheckAllBtn.addEventListener('click', async () => {
-        if (!confirm(`Reset all tasks in '${currentCategory}'?`)) return;
+        const tabName = allTabsData[currentTabId]?.name || 'Current';
+        if (!confirm(`Reset all tasks in '${tabName}'?`)) return;
         
-        // We only reset tasks in the CURRENT category
         const updates = {};
         Object.entries(allTasksData).forEach(([key, task]) => {
-            // Check if task belongs to current category (or default home)
+            // Handle legacy tasks (default them to 'home')
             const taskCat = task.category || 'home'; 
             
-            if (taskCat === currentCategory) {
+            if (taskCat === currentTabId) {
                 if (task.completed) updates[`tasks/${key}/completed`] = false;
                 if (task.subtasks) {
                     Object.keys(task.subtasks).forEach(subKey => {
@@ -407,7 +519,7 @@
 
     onValue(tasksRef, (snapshot) => {
         const data = snapshot.val();
-        allTasksData = data || {}; // Save to global variable
+        allTasksData = data || {};
         renderAllTasks();
     });
 
@@ -421,14 +533,15 @@
 
         const tasksArray = Object.entries(allTasksData).map(([id, task]) => ({ id, ...task }));
         
-        // Filter by Category
+        // Filter by Current Tab ID
         const filteredTasks = tasksArray.filter(task => {
-            const taskCat = task.category || 'home'; // Handle old tasks with no category
-            return taskCat === currentCategory;
+            const taskCat = task.category || 'home'; // Legacy support
+            return taskCat === currentTabId;
         });
 
         if (filteredTasks.length === 0) {
-             taskList.innerHTML = `<div style="text-align:center; padding:20px; color:#aaa;">No tasks in '${currentCategory}'.</div>`; 
+            const tabName = allTabsData[currentTabId]?.name || "this tab";
+             taskList.innerHTML = `<div style="text-align:center; padding:20px; color:#aaa;">No tasks in '${tabName}'.</div>`; 
              return;
         }
 
