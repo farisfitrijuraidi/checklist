@@ -18,7 +18,6 @@
             --drag-bg: #e2e8f0;
             --tab-active-bg: #ffffff;
             --tab-inactive-bg: #e1e4e8;
-            --tab-border: #d1d5db;
         }
 
         body {
@@ -30,14 +29,14 @@
             align-items: flex-start;
             min-height: 100vh;
             margin: 0;
-            padding: 40px 20px;
+            padding: 20px; /* Reduced padding */
         }
 
         .container {
-            width: 100%;
-            max-width: 950px;
+            width: 98%; /* REQUIREMENT 1: Fill the screen */
+            max-width: 2400px; /* Huge limit just in case */
             background: var(--card-bg);
-            padding: 40px;
+            padding: 30px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
@@ -71,16 +70,16 @@
         }
         
         .tab-btn {
-            padding: 10px 20px;
+            padding: 10px 35px 10px 20px; /* Extra padding right for the X button */
             border: 1px solid transparent;
             background-color: var(--tab-inactive-bg);
             color: var(--text-muted);
-            border-radius: 8px 8px 0 0; /* Rounded top corners only */
+            border-radius: 8px 8px 0 0; 
             cursor: pointer;
             font-weight: 500;
             font-size: 0.9rem;
             transition: all 0.2s ease;
-            max-width: 150px;
+            max-width: 200px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -90,14 +89,33 @@
         .tab-btn:hover { background-color: #dcdcdc; }
         
         .tab-btn.active {
-            background-color: var(--card-bg); /* Merge with body */
+            background-color: var(--card-bg);
             color: var(--text-main);
             font-weight: bold;
             border: 1px solid var(--border);
-            border-bottom: 1px solid var(--card-bg); /* Hide bottom border to blend */
-            margin-bottom: -1px; /* Push down to cover line */
+            border-bottom: 1px solid var(--card-bg);
+            margin-bottom: -1px;
             z-index: 2;
         }
+
+        /* REQUIREMENT 2: The 'X' Button on tabs */
+        .tab-close {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            line-height: 16px;
+            text-align: center;
+            border-radius: 50%;
+            font-size: 14px;
+            color: #666;
+            opacity: 0; /* Hidden by default */
+            transition: all 0.2s;
+        }
+        .tab-btn:hover .tab-close { opacity: 1; } /* Show on hover */
+        .tab-close:hover { background-color: #ffbdad; color: #d63031; }
 
         .add-tab-btn {
             padding: 8px 12px;
@@ -112,7 +130,6 @@
             margin-bottom: 5px;
         }
         .add-tab-btn:hover { background-color: var(--bg-color); color: var(--accent); }
-        /* ------------------------- */
 
         .input-group { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; }
         
@@ -138,10 +155,12 @@
 
         ul { list-style: none; padding: 0; margin: 0; }
 
+        /* GRID SYSTEM */
         .grid-layout {
             display: grid;
-            grid-template-columns: 30px 2fr 1.5fr 90px 70px; 
-            gap: 15px;
+            /* Adjusted columns to handle landscape mode better */
+            grid-template-columns: 30px 3fr 2fr 100px 100px; 
+            gap: 20px;
             align-items: start;
         }
 
@@ -204,16 +223,27 @@
             text-align: right; 
         }
         
-        .actions { display: flex; gap: 5px; padding-top: 4px; justify-content: flex-end; }
+        .actions { display: flex; gap: 4px; padding-top: 4px; justify-content: flex-end; }
         
         .icon-btn {
             background: none; border: 1px solid transparent; color: var(--text-muted);
-            cursor: pointer; font-size: 1.1rem; padding: 4px 6px;
-            border-radius: 4px; transition: all 0.2s;
+            cursor: pointer; font-size: 1.1rem; padding: 4px 8px;
+            border-radius: 4px; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
         }
         .icon-btn:hover { background-color: var(--bg-color); border-color: var(--border); color: var(--accent); }
         .icon-btn.delete:hover { color: var(--danger); background-color: var(--danger-bg); border-color: var(--danger); }
         .drag-handle { cursor: grab; color: #b2bec3; }
+
+        /* REQUIREMENT 3: Collapse Logic styles */
+        .task-item.collapsed .description-row,
+        .task-item.collapsed .subtask-list,
+        .task-item.collapsed .inline-add-container {
+            display: none !important;
+        }
+        .task-item.collapsed .collapse-btn {
+            transform: rotate(-90deg); /* Rotate arrow when closed */
+        }
+        .collapse-btn { transition: transform 0.2s; }
 
         .description-row {
             padding: 0 16px 16px 61px;
@@ -277,9 +307,7 @@
         }
 
         @media (max-width: 768px) {
-            .container { padding: 20px 15px; }
-            #taskDate { width: 100%; margin-top: -5px; }
-            button#addBtn { width: 100%; }
+            .container { padding: 20px 15px; width: 100%; }
             .list-headers { display: none; }
             .grid-layout { 
                 grid-template-columns: 30px 1fr auto;
@@ -287,8 +315,6 @@
             }
             .cell-remark { grid-column: 2 / -1; }
             .cell-date { display: none; }
-            .description-row { padding-left: 16px; }
-            .sub-description-row { padding-left: 45px; }
         }
     </style>
 </head>
@@ -351,48 +377,55 @@
     const uncheckAllBtn = document.getElementById('uncheckAllBtn');
     const tabsContainer = document.getElementById('tabsContainer');
 
-    // Default "Home" tab setup for first-time use
     let currentTabId = 'home'; 
     let allTasksData = {};
     let allTabsData = {};
 
-    // 1. Initialize Default Tab if DB is empty
+    // Initialize Default Tab
     get(tabsRef).then((snapshot) => {
         if (!snapshot.exists()) {
             set(ref(database, 'tabs/home'), { name: "Home", createdAt: Date.now() });
         }
     });
 
-    // 2. Render Tabs
+    // Render Tabs
     onValue(tabsRef, (snapshot) => {
         tabsContainer.innerHTML = "";
         const data = snapshot.val();
         allTabsData = data || {};
 
         if (!allTabsData['home']) {
-             // Fallback if user deleted all tabs, recreate Home
              set(ref(database, 'tabs/home'), { name: "Home", createdAt: Date.now() });
         }
 
         const tabsArray = Object.entries(allTabsData).map(([id, info]) => ({ id, ...info }));
         tabsArray.sort((a, b) => a.createdAt - b.createdAt);
 
-        // Render Tabs
         tabsArray.forEach(tab => {
-            const btn = document.createElement('button');
+            const btn = document.createElement('div'); // Changed to DIV for layout control
             btn.className = `tab-btn ${tab.id === currentTabId ? 'active' : ''}`;
-            btn.textContent = tab.name;
-            btn.title = "Double-click to rename, Right-click to delete";
             
-            // Switch Tab
+            // Tab Name Span
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = tab.name;
+            btn.appendChild(nameSpan);
+
+            // Close (X) Button
+            const closeSpan = document.createElement('span');
+            closeSpan.className = 'tab-close';
+            closeSpan.innerHTML = '×';
+            closeSpan.title = "Close tab";
+            btn.appendChild(closeSpan);
+            
+            // Click to Switch
             btn.onclick = () => {
                 currentTabId = tab.id;
-                renderTabs(); // to update active class
+                renderTabs();
                 renderAllTasks();
                 taskInput.placeholder = `Add to '${tab.name}'...`;
             };
 
-            // Rename Tab
+            // Double Click to Rename
             btn.ondblclick = () => {
                 const newName = prompt("Rename tab:", tab.name);
                 if (newName && newName.trim() !== "") {
@@ -400,30 +433,21 @@
                 }
             };
 
-            // Delete Tab
-            btn.oncontextmenu = (e) => {
-                e.preventDefault(); // Stop normal menu
+            // Click X to Delete
+            closeSpan.onclick = (e) => {
+                e.stopPropagation(); // Prevent switching tab
                 if (Object.keys(allTabsData).length <= 1) {
                     alert("You must keep at least one tab.");
                     return;
                 }
                 if (confirm(`Delete tab '${tab.name}' and ALL its tasks?`)) {
-                    // 1. Find tasks in this tab
                     const updates = {};
-                    updates[`tabs/${tab.id}`] = null; // Delete tab
-                    
+                    updates[`tabs/${tab.id}`] = null;
                     Object.entries(allTasksData).forEach(([taskId, task]) => {
-                        if (task.category === tab.id) {
-                            updates[`tasks/${taskId}`] = null; // Delete linked task
-                        }
+                        if (task.category === tab.id) updates[`tasks/${taskId}`] = null;
                     });
-                    
                     update(ref(database), updates);
-                    
-                    // Switch to Home if we deleted current tab
-                    if (currentTabId === tab.id) {
-                        currentTabId = 'home';
-                    }
+                    if (currentTabId === tab.id) currentTabId = 'home';
                 }
             };
 
@@ -434,27 +458,23 @@
         const addTabBtn = document.createElement('button');
         addTabBtn.className = 'add-tab-btn';
         addTabBtn.textContent = '+';
-        addTabBtn.title = "Add new tab";
         addTabBtn.onclick = () => {
             const name = prompt("Name your new tab:");
             if (name && name.trim() !== "") {
                 const newRef = push(tabsRef);
                 set(newRef, { name: name.trim(), createdAt: Date.now() });
-                // Automatically switch to new tab
                 currentTabId = newRef.key;
             }
         };
         tabsContainer.appendChild(addTabBtn);
-
-        // Refresh task view in case tab name changed
         renderAllTasks();
     });
 
-    // Helper to just re-run the Active class logic without full re-render
     function renderTabs() {
         const btns = tabsContainer.querySelectorAll('.tab-btn');
         btns.forEach(btn => {
-            if (btn.textContent === allTabsData[currentTabId]?.name) btn.classList.add('active');
+            const name = btn.querySelector('span').textContent;
+            if (name === allTabsData[currentTabId]?.name) btn.classList.add('active');
             else btn.classList.remove('active');
         });
     }
@@ -465,7 +485,6 @@
     }
 
     function updateOrder() {
-        // Only reorder tasks in CURRENT tab
         const items = [...document.querySelectorAll('#taskList > li.task-item')];
         const updates = {};
         items.forEach((item, index) => {
@@ -483,8 +502,9 @@
         push(tasksRef, {
             text: text,
             date: date,
-            category: currentTabId, // Links task to the ID (e.g., "-N7x...")
+            category: currentTabId,
             completed: false,
+            collapsed: false, // New property for requirement 3
             remark: "",
             description: "",
             order: Date.now(),
@@ -499,9 +519,7 @@
         
         const updates = {};
         Object.entries(allTasksData).forEach(([key, task]) => {
-            // Handle legacy tasks (default them to 'home')
             const taskCat = task.category || 'home'; 
-            
             if (taskCat === currentTabId) {
                 if (task.completed) updates[`tasks/${key}/completed`] = false;
                 if (task.subtasks) {
@@ -513,7 +531,6 @@
                 }
             }
         });
-
         if (Object.keys(updates).length > 0) update(ref(database), updates);
     });
 
@@ -533,9 +550,8 @@
 
         const tasksArray = Object.entries(allTasksData).map(([id, task]) => ({ id, ...task }));
         
-        // Filter by Current Tab ID
         const filteredTasks = tasksArray.filter(task => {
-            const taskCat = task.category || 'home'; // Legacy support
+            const taskCat = task.category || 'home'; 
             return taskCat === currentTabId;
         });
 
@@ -561,6 +577,8 @@
         li.dataset.id = task.id;
 
         if (task.completed) li.classList.add('completed');
+        // Apply collapsed class if saved in DB
+        if (task.collapsed) li.classList.add('collapsed');
 
         let dateDisplay = '';
         if (task.date) {
@@ -585,6 +603,7 @@
                 <div class="cell-date">${dateDisplay}</div>
 
                 <div class="actions">
+                    <button class="icon-btn collapse-btn" title="Collapse/Expand">▼</button>
                     <span class="icon-btn drag-handle" title="Drag to reorder">::</span>
                     <button class="icon-btn add-sub-toggle" title="Add Subtask">＋</button>
                     <button class="icon-btn delete" title="Delete">×</button>
@@ -599,7 +618,17 @@
             <div class="inline-add-container" id="add-container-${task.id}"></div>
         `;
 
-        // Listeners
+        // --- NEW: Collapse Listener ---
+        const collapseBtn = li.querySelector('.collapse-btn');
+        collapseBtn.addEventListener('click', () => {
+            const isNowCollapsed = !li.classList.contains('collapsed'); // Check CURRENT state before toggle
+            // Update DB immediately
+            update(ref(database, `tasks/${task.id}`), { collapsed: isNowCollapsed });
+            // UI update handled by onValue re-render, but for instant feel:
+            li.classList.toggle('collapsed'); 
+        });
+        // ------------------------------
+
         const mainDesc = li.querySelector('.main-desc');
         setTimeout(() => autoResize(mainDesc), 0);
         mainDesc.addEventListener('input', function() { autoResize(this); });
@@ -627,6 +656,11 @@
 
         const addContainer = li.querySelector(`#add-container-${task.id}`);
         li.querySelector('.add-sub-toggle').addEventListener('click', () => {
+            // If collapsed, open it first!
+            if (li.classList.contains('collapsed')) {
+                update(ref(database, `tasks/${task.id}`), { collapsed: false });
+            }
+
             if (addContainer.innerHTML !== '') { addContainer.innerHTML = ''; return; }
             addContainer.innerHTML = `
                 <div class="inline-add-form">
